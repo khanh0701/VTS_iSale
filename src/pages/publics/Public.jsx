@@ -22,7 +22,7 @@ const Public = ({ offLogin }) => {
             setIsCollapsed={setIsCollapsed}
           ></Sidebar>
         </div>
-        <div className={`w-[87%] ${isCollapsed && "w-[94.4%] "}`}>
+        <div className={`w-[87%] h-full h${isCollapsed && "w-[94.4%] "}`}>
           <Outlet></Outlet>
         </div>
       </div>

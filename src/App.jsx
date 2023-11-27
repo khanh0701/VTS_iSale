@@ -85,7 +85,10 @@ function App() {
             </Route>
             {/* Du Lieu */}
             <Route>
-              <Route path={path.DULIEU_PMH} element={<PhieuMuaHang />} />
+              <Route
+                path={path.DULIEU_PMH}
+                element={<PhieuMuaHang offLogin={handleLogout} />}
+              />
               <Route path={path.DULIEU_NDC} element={<PhieuNDC />} />
               <Route path={path.DULIEU_XDC} element={<PhieuXDC />} />
               <Route path={path.DULIEU_PBH} element={<PhieuBanHang />} />

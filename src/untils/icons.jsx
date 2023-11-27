@@ -11,6 +11,7 @@ import { MdQueryStats } from "react-icons/md";
 import { SiGithubactions } from "react-icons/si";
 import { AiOutlineMenuFold, AiOutlineMenuUnfold } from "react-icons/ai";
 import { IoAddCircleOutline } from "react-icons/io5";
+import { TiPrinter } from "react-icons/ti";
 
 const icons = {
   TfiSearch,
@@ -30,5 +31,6 @@ const icons = {
   AiOutlineMenuFold,
   AiOutlineMenuUnfold,
   IoAddCircleOutline,
+  TiPrinter,
 };
 export default icons;

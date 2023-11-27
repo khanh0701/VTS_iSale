@@ -2,10 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* .sider {
-  color: #fff;
-} */
-
 .menulist {
   height: 87.1vh;
 }
@@ -13,9 +9,3 @@
 .menu_itemk {
   max-height: 33px;
 }
-
-/* 
-.table_pmh {
-  max-width: 84.8vw;
-
-} */

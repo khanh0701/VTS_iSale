@@ -19,3 +19,22 @@ export const DanhSachPMH = (token, startDate, endDate) =>
       reject(error);
     }
   });
+
+export const ThongTinPMH = (token, Sct) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const response = await axios({
+        url: "/entries/DuLieuPMH/ThongTin",
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        data: {
+          SoChungTu: Sct,
+        },
+      });
+      resolve(response);
+    } catch (error) {
+      reject(error);
+    }
+  });

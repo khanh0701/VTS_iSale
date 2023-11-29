@@ -62,7 +62,7 @@ const HeaderMain = ({ offLogin, setIsCollapsed, isCollapsed }) => {
 
           {/* user selection */}
           {isShowUserSelected && (
-            <div className="absolute w-[320px] right-6 shadow-lg border border-gray-200 rounded-md bg-white   ">
+            <div className="absolute w-[320px] right-6 shadow-lg border border-gray-200 rounded-md bg-white  z-10  ">
               <div className="m-1 flex flex-col gap-2 ">
                 <div className="p-1 flex gap-1 items-center">
                   <img

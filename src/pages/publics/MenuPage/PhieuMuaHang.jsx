@@ -1,29 +1,28 @@
 import React, { useEffect, useState } from "react";
-import {
-  Form,
-  DatePicker,
-  Space,
-  Table,
-  Checkbox,
-  Typography,
-  Switch,
-} from "antd";
+import { Form, DatePicker, Space, Table, Checkbox, Typography } from "antd";
 const { Text } = Typography;
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import moment from "moment";
-
 const { RangePicker } = DatePicker;
 import icons from "../../../untils/icons";
 import { toast } from "react-toastify";
 import * as apis from "../../../apis";
+import { NumericFormat } from "react-number-format";
+import { Modals } from "../../../components";
 
-const { IoAddCircleOutline, TiPrinter } = icons;
+const { IoAddCircleOutline, TiPrinter, FaRegEdit, MdDelete, FaRegEye } = icons;
 const PhieuMuaHang = ({ offLogin }) => {
   const [form] = Form.useForm();
   const [isValidDate, setIsValidDate] = useState(true);
 
   const [data, setData] = useState(null);
+  const [dataThongTin, setDataThongTin] = useState(null);
+  const [dataRecord, setDataRecord] = useState(null);
   const [dates, setDates] = useState([]);
+  const [isShowModal, setIsShowModal] = useState(false);
+  // const [isOption, setIsOption] = useState(false);
+  const [actionType, setActionType] = useState("");
+  // const [soCt, setSoCt] = useState();
 
   useEffect(() => {
     const getData = async () => {
@@ -36,6 +35,30 @@ const PhieuMuaHang = ({ offLogin }) => {
     };
     getData();
   }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const tokenLogin = localStorage.getItem("tokenlogin");
+        const response = await apis.ThongTinPMH(
+          tokenLogin,
+          dataRecord?.SoChungTu
+        );
+
+        // Kiểm tra call api thành công
+        if (response.data && response.data.DataError === 0) {
+          setDataThongTin(response.data.DataResult);
+        }
+      } catch (error) {
+        console.error("Lấy data thất bại", error);
+        toast.error("Lấy data thất bại. Vui lòng thử lại sau.");
+      }
+    };
+
+    if (isShowModal && dataRecord) {
+      fetchData();
+    }
+  }, [isShowModal, dataRecord]);
 
   // Hàm kiểm tra token hết hạn
   const checkTokenExpiration = async () => {
@@ -75,6 +98,10 @@ const PhieuMuaHang = ({ offLogin }) => {
         if (response2.data && response2.data.DataError === 0) {
           setData(response2.data.DataResults);
         }
+        // const response3 = await apis.ThongTinPMH(token);
+        // if (response3.data && response3.data.DataError === 0) {
+        //   setDataThongTin(response3.data.DataResults);
+        // }
       } else {
         // Xử lý khi reFreshToken het han
         toast.error("FreshToken het han. Vui lòng đăng nhập lại.");
@@ -123,6 +150,10 @@ const PhieuMuaHang = ({ offLogin }) => {
     setIsValidDate(isValid);
   };
 
+  const roundNumber = (number) => {
+    const roundedNumber = Math.round(number * 10) / 10;
+    return roundedNumber.toFixed(1); // Làm tròn đến 1 số sau dấu thập phân và chuyển thành chuỗi
+  };
   const columns = [
     {
       title: "STT",
@@ -132,6 +163,7 @@ const PhieuMuaHang = ({ offLogin }) => {
       hight: 10,
       fixed: "left",
       align: "center",
+      render: (text, record, index) => index + 1,
     },
     {
       title: "Số Chứng Từ",
@@ -195,30 +227,50 @@ const PhieuMuaHang = ({ offLogin }) => {
       dataIndex: "TongMatHang",
       key: "TongMatHang",
       width: 150,
+      align: "end",
     },
     {
       title: "Tổng số lượng",
       dataIndex: "TongSoLuong",
       key: "TongSoLuong",
       width: 150,
+      align: "end",
+      render: (text) => roundNumber(text),
     },
     {
       title: "Tổng tiền hàng",
       dataIndex: "TongTienHang",
       key: "TongTienHang",
       width: 150,
+      align: "end",
+      render: (text) => (
+        <NumericFormat
+          value={text}
+          displayType={"text"}
+          thousandSeparator={true}
+        />
+      ),
     },
     {
       title: "Tổng tiền thuế",
       dataIndex: "TongTienThue",
       key: "TongTienThue",
       width: 150,
+      align: "end",
     },
     {
       title: "Tổng thành tiền",
       dataIndex: "TongThanhTien",
       key: "TongThanhTien",
       width: 150,
+      align: "end",
+      render: (text) => (
+        <NumericFormat
+          value={text}
+          displayType={"text"}
+          thousandSeparator={true}
+        />
+      ),
     },
 
     {
@@ -231,20 +283,27 @@ const PhieuMuaHang = ({ offLogin }) => {
       title: "Ngày tạo",
       dataIndex: "NgayTao",
       key: "NgayTao",
-      render: (text) => moment(text).format("DD/MM/YYYY"),
+      render: (text) => moment(text).format("DD/MM/YYYY hh:mm:ss"),
       width: 150,
     },
     {
       title: "Người tạo",
       dataIndex: "NguoiTao",
       key: "NguoiTao",
-      width: 150,
+      width: 200,
+    },
+    {
+      title: "Người sửa cuối",
+      dataIndex: "NguoiSuaCuoi",
+      key: "NguoiSuaCuoi",
+      width: 200,
     },
     {
       title: "Ngày sửa cuối",
       dataIndex: "NgaySuaCuoi",
       key: "NgaySuaCuoi",
-      render: (text) => (text ? moment(text).format("DD/MM/YYYY") : null),
+      render: (text) =>
+        text ? moment(text).format("DD/MM/YYYY hh:mm:ss") : null,
       width: 150,
     },
     {
@@ -266,22 +325,68 @@ const PhieuMuaHang = ({ offLogin }) => {
       title: "Chức năng",
       key: "operation",
       fixed: "right",
-      width: 200,
-      render: () => <a>action</a>,
+      width: 120,
+      align: "center",
+      render: (record) => {
+        return (
+          <>
+            <div className=" flex gap-1 items-center justify-center ">
+              <div
+                onClick={() => handleView(record)}
+                title="Xem"
+                className="p-[3px] border border-yellow-500 rounded-md text-yellow-500 hover:text-white hover:bg-yellow-500 cursor-pointer"
+              >
+                <FaRegEye size={16} />
+              </div>
+              <div
+                title="Sửa"
+                className="p-[3px] text-purple-500 border  border-purple-500 rounded-md hover:text-white hover:bg-purple-500  "
+              >
+                <FaRegEdit size={16} />
+              </div>
+              <div
+                onClick={handleDelete}
+                title="Xóa"
+                className="p-[3px] text-red-500 border  border-red-500 rounded-md hover:text-white hover:bg-red-500  "
+              >
+                <MdDelete size={16} />
+              </div>
+              <div
+                title="In phiếu"
+                className="p-[3px] text-blue-500 border  border-blue-500 rounded-md hover:text-white hover:bg-blue-500  "
+              >
+                <TiPrinter size={16} />
+              </div>
+              {/* <div
+                onClick={() => setIsOption(!isOption)}
+                title="option"
+                className="p-[3px] border-2  rounded-md  hover:text-white hover:bg-gray-500  cursor-pointer"
+              >
+                <SlOptions size={16} />
+              </div> */}
+            </div>
+            {/* {isOption && <Options />} */}
+          </>
+        );
+      },
     },
   ];
 
-  // const handleRowSelectionChange = (record, e) => {
-  //   // Xử lý thay đổi lựa chọn hàng ở đây nếu cần
-  // };
-
-  console.log(dates);
   const startDate = moment(dates[0], "DD/MM/YYYY").format("YYYY-MM-DD");
   const endDate = moment(dates[1], "DD/MM/YYYY").format("YYYY-MM-DD");
-  console.log("cho ta xem nào", { startDate, endDate });
+
+  const handleDelete = () => {
+    setActionType("delete");
+    setIsShowModal(true);
+  };
+  const handleView = (record) => {
+    setActionType("view");
+    setDataRecord(record);
+    setIsShowModal(true);
+  };
 
   return (
-    <div className="w-full h-full ">
+    <div className="w-[85vw] ">
       <div className="text-lg font-bold mx-4 my-2 "> Phiếu mua hàng</div>
       <div className="flex justify-between items-center px-4">
         {/* date rang */}
@@ -311,10 +416,10 @@ const PhieuMuaHang = ({ offLogin }) => {
                         })
                       );
                     }}
-                    defaultValue={[
-                      moment("11/11/2023", "DD/MM/YYYY"),
-                      moment("11/12/2023", "DD/MM/YYYY"),
-                    ]}
+                    // defaultValue={[
+                    //   moment("11/11/2022", "DD/MM/YYYY"),
+                    //   moment("31/12/2024", "DD/MM/YYYY"),
+                    // ]}
                   />
                   {isValidDate ? (
                     <CheckCircleOutlined style={{ color: "green" }} />
@@ -346,58 +451,113 @@ const PhieuMuaHang = ({ offLogin }) => {
           </button>
         </div>
       </div>
-      <div className=" px-2 py-1 ">
+      <div className="relative px-2 py-1 ">
         <Table
-          // style={{ height: "600px", background: "red" }}
+          className="table_pmh"
           columns={columns}
           dataSource={data}
           size="small"
           scroll={{
             x: 1500,
-            y: 420,
+            y: 480,
           }}
           bordered
           pagination={false}
-          // rowKey={(record) => record.key} // Thay 'key' bằng key thực của dữ liệu nếu có
-          // summary={(pageData) => {
-          //   let totalBorrow = 0;
-          //   let totalRepayment = 0;
-          //   pageData.forEach(({ borrow, repayment }) => {
-          //     totalBorrow += borrow;
-          //     totalRepayment += repayment;
-          //   });
-          //   return (
-          //     <>
-          //       <Table.Summary fixed="bottom">
-          //         <Table.Summary.Row>
-          //           <Table.Summary.Cell index={0}>1</Table.Summary.Cell>
-          //           <Table.Summary.Cell index={1}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={2}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={3}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={4}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={5}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={6}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={7}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={8}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={9}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={10}>1</Table.Summary.Cell>
-          //           <Table.Summary.Cell index={11}>1</Table.Summary.Cell>
-          //           <Table.Summary.Cell index={12}>1</Table.Summary.Cell>
-          //           <Table.Summary.Cell index={13}>1</Table.Summary.Cell>
-          //           <Table.Summary.Cell index={14}>1</Table.Summary.Cell>
-          //           <Table.Summary.Cell index={15}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={16}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={17}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={18}></Table.Summary.Cell>
-          //           <Table.Summary.Cell index={19}>1</Table.Summary.Cell>
-          //           <Table.Summary.Cell index={20}></Table.Summary.Cell>
-          //         </Table.Summary.Row>
-          //       </Table.Summary>
-          //     </>
-          //   );
-          // }}
+          rowKey={(record) => record.SoChungTu}
+          onRow={(record) => ({
+            onClick: () => handleView(record),
+          })}
+          // Bảng Tổng
+          summary={(pageData) => {
+            let totalTongThanhTien = 0;
+            let totalTongTienThue = 0;
+            let totalTongTienHang = 0;
+            let totalTongSoLuong = 0;
+            let totalTongMatHang = 0;
+
+            pageData.forEach(
+              ({
+                TongThanhTien,
+                TongTienThue,
+                TongTienHang,
+                TongSoLuong,
+                TongMatHang,
+              }) => {
+                totalTongThanhTien += TongThanhTien;
+                totalTongTienThue += TongTienThue;
+                totalTongTienHang += TongTienHang;
+                totalTongSoLuong += TongSoLuong;
+                totalTongMatHang += TongMatHang;
+              }
+            );
+            return (
+              <Table.Summary fixed="bottom">
+                <Table.Summary.Row className="text-end font-bold">
+                  <Table.Summary.Cell index={0} className="text-center ">
+                    {pageData.length}
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={1}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={2}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={3}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={4}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={5}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={6}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={7}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={8}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={9}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={10}>
+                    {totalTongMatHang}
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={11}>
+                    {roundNumber(totalTongSoLuong)}
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={12}>
+                    <NumericFormat
+                      value={totalTongTienHang}
+                      displayType={"text"}
+                      thousandSeparator={true}
+                      // suffix={" ₫"}
+                    />
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={13}>
+                    {totalTongTienThue}
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={14}>
+                    <NumericFormat
+                      value={totalTongThanhTien}
+                      displayType={"text"}
+                      thousandSeparator={true}
+                    />
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={15}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={16}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={17}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={18}></Table.Summary.Cell>
+                  <Table.Summary.Cell index={19} className="text-center ">
+                    {data
+                      ? data.reduce(
+                          (count, item) => count + (item.TTTienMat ? 1 : 0),
+                          0
+                        )
+                      : null}
+                  </Table.Summary.Cell>
+                  <Table.Summary.Cell index={20}></Table.Summary.Cell>
+                </Table.Summary.Row>
+              </Table.Summary>
+            );
+          }}
         ></Table>
       </div>
+
+      {isShowModal && (
+        <Modals
+          close={() => setIsShowModal(false)}
+          actionType={actionType}
+          roundNumber={roundNumber}
+          dataRecord={dataRecord}
+          dataThongTin={dataThongTin}
+        />
+      )}
     </div>
   );
 };

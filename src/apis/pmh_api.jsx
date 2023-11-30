@@ -38,3 +38,69 @@ export const ThongTinPMH = (token, Sct) =>
       reject(error);
     }
   });
+
+export const ListHelperKhoHang = (token) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const response = await axios({
+        url: "/entries/DuLieuPMH/ListHelper_KhoHang",
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      resolve(response);
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const ListHelperDoiTuong = (token) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const response = await axios({
+        url: "/entries/DuLieuPMH/ListHelper_DoiTuong",
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      resolve(response);
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const ListHelperHH = (token, MK) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const response = await axios({
+        url: "/entries/DuLieuPMH/ListHelper_HangHoa",
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        data: { SoChungTu: null, MaKho: MK },
+      });
+      resolve(response);
+    } catch (error) {
+      reject(error);
+    }
+  });
+
+export const ThemPMH = (token, data) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const response = await axios({
+        url: "/entries/DuLieuPMH/Them",
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        data: data, // Truyền dữ liệu từ PMHForm vào đây
+      });
+      resolve(response);
+    } catch (error) {
+      reject(error);
+    }
+  });

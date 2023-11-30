@@ -19,10 +19,10 @@ const PhieuMuaHang = ({ offLogin }) => {
   const [dataThongTin, setDataThongTin] = useState(null);
   const [dataRecord, setDataRecord] = useState(null);
   const [dates, setDates] = useState([]);
+  const [dataKhoHang, setDataKhoHang] = useState(null);
+  const [dataDoiTuong, setDataDoiTuong] = useState(null);
   const [isShowModal, setIsShowModal] = useState(false);
-  // const [isOption, setIsOption] = useState(false);
   const [actionType, setActionType] = useState("");
-  // const [soCt, setSoCt] = useState();
 
   useEffect(() => {
     const getData = async () => {
@@ -40,14 +40,16 @@ const PhieuMuaHang = ({ offLogin }) => {
     const fetchData = async () => {
       try {
         const tokenLogin = localStorage.getItem("tokenlogin");
-        const response = await apis.ThongTinPMH(
-          tokenLogin,
-          dataRecord?.SoChungTu
-        );
 
-        // Kiểm tra call api thành công
-        if (response.data && response.data.DataError === 0) {
-          setDataThongTin(response.data.DataResult);
+        const responseKH = await apis.ListHelperKhoHang(tokenLogin);
+        if (responseKH.data && responseKH.data.DataError === 0) {
+          setDataKhoHang(responseKH.data.DataResults);
+          if (actionType === "create") {
+            const responseDT = await apis.ListHelperDoiTuong(tokenLogin);
+            if (responseDT.data && responseDT.data.DataError === 0) {
+              setDataDoiTuong(responseDT.data.DataResults);
+            }
+          }
         }
       } catch (error) {
         console.error("Lấy data thất bại", error);
@@ -76,7 +78,7 @@ const PhieuMuaHang = ({ offLogin }) => {
         toast.error(
           "Có người đang nhập ở nơi khác. Bạn sẽ bị chuyển đến trang đăng nhập."
         );
-        offLogin;
+        // offLogin;
       }
     } catch (error) {
       console.error("Kiểm tra token thất bại", error);
@@ -98,10 +100,6 @@ const PhieuMuaHang = ({ offLogin }) => {
         if (response2.data && response2.data.DataError === 0) {
           setData(response2.data.DataResults);
         }
-        // const response3 = await apis.ThongTinPMH(token);
-        // if (response3.data && response3.data.DataError === 0) {
-        //   setDataThongTin(response3.data.DataResults);
-        // }
       } else {
         // Xử lý khi reFreshToken het han
         toast.error("FreshToken het han. Vui lòng đăng nhập lại.");
@@ -339,6 +337,7 @@ const PhieuMuaHang = ({ offLogin }) => {
                 <FaRegEye size={16} />
               </div>
               <div
+                onClick={() => handleEdit(record)}
                 title="Sửa"
                 className="p-[3px] text-purple-500 border  border-purple-500 rounded-md hover:text-white hover:bg-purple-500  "
               >
@@ -379,8 +378,21 @@ const PhieuMuaHang = ({ offLogin }) => {
     setActionType("delete");
     setIsShowModal(true);
   };
+
   const handleView = (record) => {
     setActionType("view");
+    setDataRecord(record);
+    setIsShowModal(true);
+  };
+
+  const handleEdit = (record) => {
+    setActionType("edit");
+    setDataRecord(record);
+    setIsShowModal(true);
+  };
+
+  const handleCreate = (record) => {
+    setActionType("create");
     setDataRecord(record);
     setIsShowModal(true);
   };
@@ -437,7 +449,10 @@ const PhieuMuaHang = ({ offLogin }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center   py-1 px-2 bg-bg-main rounded-md  text-white text-sm hover:opacity-80">
+          <button
+            onClick={handleCreate}
+            className="flex items-center   py-1 px-2 bg-bg-main rounded-md  text-white text-sm hover:opacity-80"
+          >
             <div className="pr-1">
               <IoAddCircleOutline size={20} />
             </div>
@@ -459,14 +474,14 @@ const PhieuMuaHang = ({ offLogin }) => {
           size="small"
           scroll={{
             x: 1500,
-            y: 480,
+            y: 450,
           }}
           bordered
           pagination={false}
           rowKey={(record) => record.SoChungTu}
-          onRow={(record) => ({
-            onClick: () => handleView(record),
-          })}
+          // onRow={(record) => ({
+          //   onClick: () => handleView(record),
+          // })}
           // Bảng Tổng
           summary={(pageData) => {
             let totalTongThanhTien = 0;
@@ -556,6 +571,8 @@ const PhieuMuaHang = ({ offLogin }) => {
           roundNumber={roundNumber}
           dataRecord={dataRecord}
           dataThongTin={dataThongTin}
+          dataKhoHang={dataKhoHang}
+          dataDoiTuong={dataDoiTuong}
         />
       )}
     </div>

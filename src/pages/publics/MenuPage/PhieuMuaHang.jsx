@@ -49,6 +49,14 @@ const PhieuMuaHang = ({ offLogin }) => {
             if (responseDT.data && responseDT.data.DataError === 0) {
               setDataDoiTuong(responseDT.data.DataResults);
             }
+          } else if (actionType === "view") {
+            const responseTT = await apis.ThongTinPMH(
+              tokenLogin,
+              dataRecord.SoChungTu
+            );
+            if (responseTT.data && responseTT.data.DataError === 0) {
+              setDataThongTin(responseTT.data.DataResult);
+            }
           }
         }
       } catch (error) {
@@ -150,7 +158,7 @@ const PhieuMuaHang = ({ offLogin }) => {
 
   const roundNumber = (number) => {
     const roundedNumber = Math.round(number * 10) / 10;
-    return roundedNumber.toFixed(1); // Làm tròn đến 1 số sau dấu thập phân và chuyển thành chuỗi
+    return roundedNumber.toFixed(1);
   };
   const columns = [
     {
@@ -474,7 +482,7 @@ const PhieuMuaHang = ({ offLogin }) => {
           size="small"
           scroll={{
             x: 1500,
-            y: 450,
+            y: 410,
           }}
           bordered
           pagination={false}

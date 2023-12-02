@@ -88,18 +88,24 @@ export const ListHelperHH = (token, MK) =>
     }
   });
 
-export const ThemPMH = (token, data) =>
+export const ThemPMH = (token, formPMH, MaDoiTuong, MaKho) =>
   new Promise(async (resolve, reject) => {
     try {
-      const response = await axios({
-        url: "/entries/DuLieuPMH/Them",
-        method: "post",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        data: data, // Truyền dữ liệu từ PMHForm vào đây
+      console.log("Data to be sent to API:", {
+        ...formPMH,
+        MaDoiTuong: MaDoiTuong,
+        MaKho: MaKho,
       });
-      resolve(response);
+      // const response = await axios({
+      //   url: "/entries/DuLieuPMH/Them",
+      //   method: "post",
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      //   data: { ...formPMH, MaDoiTuong: MaDoiTuong, MaKho: MaKho },
+      // });
+      // console.log(response);
+      // resolve(response);
     } catch (error) {
       reject(error);
     }

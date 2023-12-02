@@ -9,6 +9,9 @@ export default {
       colors: {
         "bg-main": "#2984ff",
       },
+      fontSize: {
+        "text-main": "14px",
+      },
     },
   },
   plugins: [],

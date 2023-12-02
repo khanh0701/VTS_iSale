@@ -2,28 +2,56 @@
 import { useState } from "react";
 
 import icons from "../untils/icons";
-
+import { toast } from "react-toastify";
 const { IoMdClose } = icons;
 const ModalHH = ({ close, data, onRowCreate }) => {
   const [selectedRow, setSelectedRow] = useState(null);
+  const [selectionCount, setSelectionCount] = useState(0);
 
   const handleRowClick = (dataRow) => {
     setSelectedRow(dataRow.MaHang);
   };
 
   const handleChoose = (dataRow) => {
-    const defaultValues = {
-      SoLuong: "1",
-      DonGia: "1",
-      TienHang: "1",
-      Thue: "1",
-      TienThue: "1",
-      ThanhTien: "1",
-    };
-    const newRow = { ...dataRow, ...defaultValues };
-    onRowCreate(newRow);
-    close();
+    if (selectedRow && selectedRow.MaHang === dataRow.MaHang) {
+      setSelectionCount(selectionCount + 1);
+
+      const newQuantity = selectionCount + 1;
+      const defaultValues = {
+        SoLuong: String(newQuantity),
+        DonGia: "0",
+        TienHang: "0",
+        Thue: "0",
+        TienThue: "0",
+        ThanhTien: "0",
+      };
+      const newRow = { ...dataRow, ...defaultValues };
+      onRowCreate(newRow);
+
+      toast.success("Chọn hàng hóa thành công", {
+        autoClose: 1000,
+      });
+    } else {
+      setSelectedRow(dataRow);
+      setSelectionCount(1);
+
+      const defaultValues = {
+        SoLuong: 1,
+        DonGia: 0,
+        TienHang: 0,
+        Thue: 0,
+        TienThue: 0,
+        ThanhTien: 0,
+      };
+      const newRow = { ...dataRow, ...defaultValues };
+      onRowCreate(newRow);
+
+      toast.success("Chọn hàng hóa thành công", {
+        autoClose: 1000,
+      });
+    }
   };
+
   const title = [
     "STT",
     "Mã Hàng",
@@ -39,7 +67,7 @@ const ModalHH = ({ close, data, onRowCreate }) => {
     <div className="fixed inset-0 bg-black bg-opacity-25 flex justify-center items-center z-10">
       <div className="  m-6  p-4 absolute shadow-lg bg-white rounded-md flex flex-col ">
         <div className=" w-[90vw] h-[600px] ">
-          <div className="flex justify-between  items-start pb-1">
+          <div className="flex justify-between items-start pb-1">
             <label className="font-bold ">Danh sách hàng hóa</label>
             <button
               onClick={() => close()}
@@ -49,8 +77,8 @@ const ModalHH = ({ close, data, onRowCreate }) => {
             </button>
           </div>
           {/* table */}
-          <div className="max-w-[98%]  max-h-[80%] mx-auto bg-white  rounded-md my-3 overflow-y-auto text-sm">
-            <table className="min-w-full min-h-full bg-white border border-gray-300">
+          <div className="max-w-[98%]  max-h-[90%] mx-auto bg-white  rounded-md my-3 overflow-y-auto text-sm">
+            <table className="min-w-full min-h-full bg-white border border-gray-300 text-text-main">
               <thead>
                 <tr className="bg-gray-100">
                   {title.map((item) => (
@@ -94,20 +122,6 @@ const ModalHH = ({ close, data, onRowCreate }) => {
                 ))}
               </tbody>
             </table>
-          </div>
-          <div className="flex justify-end gap-2">
-            {/* <button
-              onClick={() => handleChoose()}
-              className="border border-blue-500 px-2 py-1 rounded-md  text-blue-500 hover:bg-blue-500 hover:text-white"
-            >
-              Chọn
-            </button> */}
-            <button
-              onClick={() => close()}
-              className="border border-red-500 px-2 py-1 rounded-md text-red-500 hover:bg-red-500 hover:text-white "
-            >
-              Đóng
-            </button>
           </div>
         </div>
       </div>

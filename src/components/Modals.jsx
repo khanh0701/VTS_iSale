@@ -17,26 +17,45 @@ const Modals = ({
   dataThongTin,
   dataKhoHang,
   dataDoiTuong,
-  dataRecord,
 }) => {
   const [isShowModalHH, setIsShowModalHH] = useState(false);
   const [dataHangHoa, setDataHangHoa] = useState(null);
-  const [selectedKhoHang, setSelectedKhoHang] = useState("K01");
-
+  const [selectedKhoHang, setSelectedKhoHang] = useState(
+    dataKhoHang?.length > 0 ? dataKhoHang[0].MaKho : ""
+  );
   const [selectedRowData, setSelectedRowData] = useState([]);
+  const [selectedDoiTuong, setSelectedDoiTuong] = useState();
+  const [doiTuongInfo, setDoiTuongInfo] = useState({ Ten: "", DiaChi: "" });
 
-  const [PMHForm, setPMHForm] = useState({
-    NgayCTu: "",
-    DaoHan: "",
-    MaDoiTuong: "",
+  const startDate = moment(new Date()).format("YYYY-MM-DD");
+  const endDate = moment(new Date()).format("YYYY-MM-DD");
+
+  const [formPMH, setFormPMH] = useState({
+    NgayCTu: startDate,
+    DaoHan: endDate,
     TenDoiTuong: "",
     DiaChi: "",
     MaSoThue: "",
-    MaKho: "",
-    TTTienMat: "",
-    GhiChu: "",
+    TTTienMat: false,
+    GhiChu: null,
+    DataDetails: [
+      {
+        STT: 1,
+        MaHang: "",
+        TenHang: "",
+        DVT: "",
+        SoLuong: 0,
+        DonGia: 0,
+        TienHang: 0,
+        TyLeThue: 0,
+        TienThue: 0,
+        ThanhTien: 0,
+        TyLeCKTT: 0,
+        TienCKTT: 0,
+        TongCong: 0,
+      },
+    ],
   });
-
   const columns = [
     {
       title: "STT",
@@ -164,22 +183,52 @@ const Modals = ({
     "Số lượng",
     "Đơn giá",
     "Tiền hàng",
-    "Thuế",
+    "% Thuế",
     "Tiền thuế",
     "Thành tiền",
+    "",
   ];
+
+  useEffect(() => {
+    setFormPMH((prevFormPMH) => ({
+      ...prevFormPMH,
+      DataDetails: selectedRowData.map((item, index) => ({
+        STT: index + 1,
+        MaHang: item.MaHang,
+        TenHang: item.TenHang,
+        DVT: item.DVT,
+        //
+        SoLuong: item.SoLuong,
+        DonGia: item.DonGia,
+        TienHang: item.SoLuong * item.DonGia,
+        TyLeThue: item.Thue,
+        TienThue: item.TienThue,
+        ThanhTien: item.ThanhTien,
+        // TyLeCKTT: item.TyLeCKTT,
+        // TienCKTT: item.TienCKTT,
+        // TongCong: item.TongCong,
+        TyLeCKTT: 0,
+        TienCKTT: 0,
+        TongCong: 0,
+      })),
+    }));
+  }, [selectedRowData]);
 
   const handleSubmit = async () => {
     try {
       const tokenLogin = localStorage.getItem("tokenlogin");
-      const response = await apis.ThemPMH(tokenLogin, PMHForm);
-
+      const response = await apis.ThemPMH(
+        tokenLogin,
+        formPMH,
+        selectedDoiTuong,
+        selectedKhoHang
+      );
       // Kiểm tra call api thành công
       if (response.data && response.data.DataError === 0) {
         console.log("hello");
       }
 
-      setPMHForm({
+      setFormPMH({
         NgayCTu: "",
         DaoHan: "",
         MaDoiTuong: "",
@@ -214,6 +263,24 @@ const Modals = ({
   const handleRowCreate = (newRow) => {
     setSelectedRowData((prevData) => [...prevData, newRow]);
   };
+
+  const handleDeleteRow = (index) => {
+    const updatedRows = [...selectedRowData];
+    updatedRows.splice(index, 1);
+    setSelectedRowData(updatedRows);
+  };
+
+  const handleDoiTuongFocus = (event) => {
+    const selectedValue = event.target.value;
+    setSelectedDoiTuong(selectedValue);
+
+    // Tìm thông tin đối tượng tương ứng và cập nhật state
+    const selectedDoiTuongInfo = dataDoiTuong.find(
+      (item) => item.Ma === selectedValue
+    );
+    setDoiTuongInfo(selectedDoiTuongInfo || { Ten: "", DiaChi: "" });
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-25 flex justify-center items-center z-10">
       <div className="  m-6 p-4 absolute shadow-lg bg-white rounded-md flex flex-col ">
@@ -253,7 +320,7 @@ const Modals = ({
                       <input
                         type="text"
                         className=" border border-gray-300 outline-none  px-2"
-                        value={dataRecord?.SoChungTu}
+                        value={dataThongTin?.SoChungTu}
                       />
                     </div>
                     <div className="flex items-center gap-1">
@@ -261,7 +328,9 @@ const Modals = ({
                       <input
                         type="text"
                         className="border border-gray-300 outline-none px-2 "
-                        value={moment(dataRecord?.NgayCTu).format("DD/MM/YYYY")}
+                        value={moment(dataThongTin?.NgayCTu).format(
+                          "DD/MM/YYYY"
+                        )}
                       />
                     </div>
                     <div className="flex items-center gap-1">
@@ -269,7 +338,9 @@ const Modals = ({
                       <input
                         type="text"
                         className="border border-gray-300 outline-none px-2 "
-                        value={moment(dataRecord?.DaoHan).format("DD/MM/YYYY")}
+                        value={moment(dataThongTin?.DaoHan).format(
+                          "DD/MM/YYYY"
+                        )}
                       />
                     </div>
                   </div>
@@ -279,7 +350,7 @@ const Modals = ({
                     </label>
                     <select className=" bg-white border w-full outline-none border-gray-300  ">
                       <option value="MaDoiTuong_TenDoiTuong">
-                        {dataRecord?.MaDoiTuong} - {dataRecord?.TenDoiTuong}
+                        {dataThongTin?.MaDoiTuong} - {dataThongTin?.TenDoiTuong}
                       </option>
                     </select>
                   </div>
@@ -288,7 +359,7 @@ const Modals = ({
                     <input
                       type="text"
                       className="w-full border border-gray-300 outline-none px-2 "
-                      value={dataRecord?.TenDoiTuong}
+                      value={dataThongTin?.TenDoiTuong}
                     />
                   </div>
                   <div className="flex items-center justify-between p-3">
@@ -296,7 +367,7 @@ const Modals = ({
                     <input
                       type="text"
                       className="w-full border border-gray-300 outline-none px-2 "
-                      value={dataRecord?.DiaChi}
+                      value={dataThongTin?.DiaChi}
                     />
                   </div>
                   <div className="flex items-center  w-full">
@@ -306,7 +377,7 @@ const Modals = ({
                       </label>
                       <select className=" bg-white border w-full  border-gray-300 hover:border-gray-500 ">
                         <option value="ThongTinKho">
-                          {dataRecord?.ThongTinKho}
+                          {dataThongTin?.MaKho} - {dataThongTin?.TenKho}
                         </option>
                       </select>
                     </div>
@@ -315,7 +386,7 @@ const Modals = ({
                       <input
                         type="text"
                         className="w-full border border-gray-300 outline-none px-2 "
-                        value={dataRecord?.GhiChu}
+                        value={dataThongTin?.GhiChu}
                       />
                     </div>
                   </div>
@@ -332,7 +403,7 @@ const Modals = ({
                         <input
                           type="text"
                           className=" border border-gray-300 outline-none px-2"
-                          value={dataRecord?.NguoiTao}
+                          value={dataThongTin?.NguoiTao}
                         />
                       </div>
                       <div className="flex items-center p-3 w-1/2">
@@ -341,9 +412,9 @@ const Modals = ({
                           type="text"
                           className="w-full border border-gray-300 outline-none px-2 "
                           value={
-                            dataRecord?.NgayTao &&
-                            moment(dataRecord.NgayTao).isValid()
-                              ? moment(dataRecord.NgayTao).format(
+                            dataThongTin?.NgayTao &&
+                            moment(dataThongTin.NgayTao).isValid()
+                              ? moment(dataThongTin.NgayTao).format(
                                   "DD/MM/YYYY hh:mm:ss"
                                 )
                               : ""
@@ -357,7 +428,7 @@ const Modals = ({
                         <input
                           type="text"
                           className=" border border-gray-300 outline-none px-2 "
-                          value={dataRecord?.NguoiSuaCuoi}
+                          value={dataThongTin?.NguoiSuaCuoi}
                         />
                       </div>
                       <div className="flex items-center p-3 w-1/2">
@@ -366,9 +437,9 @@ const Modals = ({
                           type="text"
                           className="w-full border border-gray-300 outline-none px-2 "
                           value={
-                            dataRecord?.NgaySuaCuoi &&
-                            moment(dataRecord.NgaySuaCuoi).isValid()
-                              ? moment(dataRecord.NgaySuaCuoi).format(
+                            dataThongTin?.NgaySuaCuoi &&
+                            moment(dataThongTin.NgaySuaCuoi).isValid()
+                              ? moment(dataThongTin.NgaySuaCuoi).format(
                                   "DD/MM/YYYY hh:mm:ss"
                                 )
                               : ""
@@ -635,18 +706,17 @@ const Modals = ({
                 <IoMdClose />
               </button>
             </div>
-            <div className="border w-full h-[90%] rounded-sm text-sm">
+            <div className="border w-full h-[96%] rounded-sm text-sm">
               <div className="flex">
                 {/* thong tin phieu */}
                 <div className="">
-                  <div className="flex p-3 gap-12 w-full ">
-                    <div className=" flex items-center gap-2">
+                  <div className="flex p-3 gap-12 w-full">
+                    <div className="flex items-center gap-2">
                       <label className="">Số chứng từ</label>
                       <input
                         readOnly
                         type="text"
                         className=" border border-gray-300 outline-none  px-2 cursor-not-allowed  bg-gray-200"
-                        // value={dataThongTin?.SoChungTu}
                       />
                     </div>
                     <div className="flex items-center gap-1">
@@ -654,6 +724,10 @@ const Modals = ({
                       <input
                         type="text"
                         className="border border-gray-300 outline-none px-2 "
+                        value={moment(formPMH.NgayCTu).format("DD/MM/YYYY")}
+                        onChange={(e) =>
+                          setFormPMH({ ...formPMH, NgayCTu: e.target.value })
+                        }
                       />
                     </div>
                     <div className="flex items-center gap-1">
@@ -661,9 +735,9 @@ const Modals = ({
                       <input
                         type="text"
                         className="border border-gray-300 outline-none px-2 "
-                        value={PMHForm.DaoHan}
+                        value={moment(formPMH.DaoHan).format("DD/MM/YYYY")}
                         onChange={(e) =>
-                          setPMHForm({ ...PMHForm, DaoHan: e.target.value })
+                          setFormPMH({ ...formPMH, DaoHan: e.target.value })
                         }
                       />
                     </div>
@@ -672,10 +746,14 @@ const Modals = ({
                     <label form="doituong" className="w-[86px]">
                       Đối tượng
                     </label>
-                    <select className=" bg-white border w-full outline-none border-gray-300  ">
+                    <select
+                      className=" bg-white border w-full outline-none border-gray-300  "
+                      value={selectedDoiTuong}
+                      onChange={handleDoiTuongFocus}
+                    >
                       {dataDoiTuong?.map((item) => (
                         <option key={item.Ma} value={item.Ma}>
-                          {item.Nhom}
+                          {item.Ma} - {item.Ten}
                         </option>
                       ))}
                     </select>
@@ -685,6 +763,10 @@ const Modals = ({
                     <input
                       type="text"
                       className="w-full border border-gray-300 outline-none px-2 "
+                      value={doiTuongInfo.Ten}
+                      onChange={(e) =>
+                        setFormPMH({ ...formPMH, Ten: e.target.value })
+                      }
                     />
                   </div>
                   <div className="flex items-center justify-between p-3">
@@ -692,6 +774,10 @@ const Modals = ({
                     <input
                       type="text"
                       className="w-full border border-gray-300 outline-none px-2 "
+                      value={doiTuongInfo.DiaChi}
+                      onChange={(e) =>
+                        setFormPMH({ ...formPMH, DiaChi: e.target.value })
+                      }
                     />
                   </div>
                   <div className="flex items-center  w-full">
@@ -716,7 +802,13 @@ const Modals = ({
                       <input
                         type="text"
                         className="w-full border border-gray-300 outline-none px-2 "
-                        // value={dataThongTin?.GhiChu}
+                        value={formPMH.GhiChu}
+                        onChange={(e) =>
+                          setFormPMH({
+                            ...formPMH,
+                            GhiChu: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
@@ -732,14 +824,20 @@ const Modals = ({
                 >
                   chọn từ danh sách
                 </button>
+                <button
+                  onClick={handleSubmit}
+                  className="border border-blue-500 rounded-md px-4 py-2 hover:bg-blue-500 hover:text-white"
+                >
+                  tạo
+                </button>
               </div>
               {/* table */}
-              <div className="max-w-[98%]  max-h-[70%] mx-auto bg-white  rounded-md my-3 ">
-                <table className="min-w-full min-h-full bg-white border border-gray-300">
+              <div className="max-w-[98%]  max-h-[50%] mx-auto bg-white  rounded-md my-3 overflow-y-auto ">
+                <table className="min-w-full min-h-full bg-white border border-gray-300 text-text-main">
                   <thead>
                     <tr>
                       {title.map((item) => (
-                        <th key={item} className="py-2 px-4 border">
+                        <th key={item} className="py-1 px-2 border">
                           {item}
                         </th>
                       ))}
@@ -748,18 +846,61 @@ const Modals = ({
                   <tbody>
                     {selectedRowData.map((item, index) => (
                       <tr key={index}>
-                        <td className="py-2 px-4 border">{index + 1}</td>
-                        <td className="py-2 px-4 border">{item.MaHang}</td>
+                        <td className="py-2 px-4 border text-center ">
+                          {index + 1}
+                        </td>
+                        <td className="border">
+                          <select
+                            className=" bg-white  w-full h-full outline-none  "
+                            value={item.MaHang}
+                          >
+                            {dataHangHoa?.map((item) => (
+                              <option key={item.MaHang} value={item.MaHang}>
+                                {item.MaHang} - {item.TenHang}
+                              </option>
+                            ))}
+                          </select>
+                        </td>
                         <td className="py-2 px-4 border">{item.TenHang}</td>
                         <td className="py-2 px-4 border text-center">
                           {item.DVT}
                         </td>
-                        <td className="py-2 px-4 border">{item.SoLuong}</td>
-                        <td className="py-2 px-4 border">{item.DonGia}</td>
-                        <td className="py-2 px-4 border">{item.TienHang}</td>
-                        <td className="py-2 px-4 border">{item.Thue}</td>
-                        <td className="py-2 px-4 border">{item.TienThue}</td>
-                        <td className="py-2 px-4 border">{item.ThanhTien}</td>
+                        <td className="py-2 px-4 border text-end">
+                          {roundNumber(item.SoLuong)}
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          <NumericFormat
+                            value={item.DonGia}
+                            displayType={"text"}
+                            thousandSeparator={true}
+                            // suffix={" ₫"}
+                          />
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          <NumericFormat
+                            value={item.TienHang}
+                            displayType={"text"}
+                            thousandSeparator={true}
+                            // suffix={" ₫"}
+                          />
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          {item.Thue}
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          {item.TienThue}
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          {item.ThanhTien}
+                        </td>
+                        <td className="py-2 flex justify-center ">
+                          <span
+                            onClick={() => handleDeleteRow(index)}
+                            className="p-[3px] text-red-500 border  border-red-500 rounded-md hover:text-white hover:bg-red-500  cursor-pointer "
+                          >
+                            <MdDelete size={20} />
+                          </span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

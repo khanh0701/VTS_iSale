@@ -9,7 +9,8 @@ import { NumericFormat } from "react-number-format";
 import ModalHH from "./ModalHH";
 import { toast } from "react-toastify";
 import { DatePicker, Space } from "antd";
-import Row from "./Row";
+import { CreateRow } from ".";
+
 const { RangePicker } = DatePicker;
 
 const { IoMdClose, MdDelete } = icons;
@@ -21,21 +22,22 @@ const Modals = ({
   dataKhoHang,
   dataDoiTuong,
   dataRecord,
-  dataDSPMH,
+  dataPMH,
+  controlDate,
 }) => {
   const [isShowModalHH, setIsShowModalHH] = useState(false);
   const [dataHangHoa, setDataHangHoa] = useState(null);
-  // const [MaPMH, setMaPMH] = useState(null);
   const [selectedKhoHang, setSelectedKhoHang] = useState(
     dataKhoHang?.length > 0 ? dataKhoHang[0].MaKho : ""
   );
   const [selectedRowData, setSelectedRowData] = useState([]);
   const [selectedDoiTuong, setSelectedDoiTuong] = useState();
-
+  const [selectedCheckbox, setSelectedCheckbox] = useState(1);
   const [doiTuongInfo, setDoiTuongInfo] = useState({ Ten: "", DiaChi: "" });
+  const [dataBase64, setDataBase64] = useState();
 
-  const startDate = dayjs().format("YYYY-MM-DDTHH:mm:ss");
-  const endDate = dayjs().format("YYYY-MM-DDTHH:mm:ss");
+  const startDate = dayjs(controlDate.NgayBatDau).format("YYYY-MM-DDTHH:mm:ss");
+  const endDate = dayjs(controlDate.NgayKetThuc).format("YYYY-MM-DDTHH:mm:ss");
 
   const [formPMH, setFormPMH] = useState({
     NgayCTu: startDate,
@@ -72,7 +74,6 @@ const Modals = ({
   const [formPrint, setFormPrint] = useState({
     NgayBatDau: startDate,
     NgayKetThuc: endDate,
-    SoLien: "1",
   });
 
   const columns = [
@@ -248,6 +249,10 @@ const Modals = ({
   useEffect(() => {
     if (dataKhoHang) setSelectedKhoHang(dataKhoHang[0].MaKho);
   }, [dataKhoHang]);
+  useEffect(() => {
+    if (dataPMH) setSelectedSctBD(dataPMH[0].SoChungTu);
+    if (dataPMH) setSelectedSctKT(dataPMH[0].SoChungTu);
+  }, [dataPMH]);
 
   const handleAddInList = async () => {
     try {
@@ -366,12 +371,12 @@ const Modals = ({
         tokenLogin,
         formPrint,
         selectedSctBD,
-        selectedSctKT
+        selectedSctKT,
+        selectedCheckbox
       );
       // Kiểm tra call api thành công
       if (response.data && response.data.DataError === 0) {
-        toast.success(response.data.DataErrorDescription);
-        window.location.reload();
+        setDataBase64(response.data.DataResults);
       } else if (response.data && response.data.DataError === -104) {
         toast.error(response.data.DataErrorDescription);
       } else if (response.data && response.data.DataError === -103) {
@@ -385,10 +390,48 @@ const Modals = ({
       } else {
         toast.error(response.data.DataErrorDescription);
       }
+      base64ToPDF();
       close();
     } catch (error) {
       console.error("Error while saving data:", error);
     }
+  };
+
+  useEffect(() => {
+    if (dataBase64) base64ToPDF(dataBase64);
+  }, [dataBase64]);
+
+  const base64ToPDF = (dataBase64) => {
+    // Decode base64 string
+    const decodedData = atob(dataBase64);
+
+    // Convert decoded data to array buffer
+    const arrayBuffer = new ArrayBuffer(decodedData.length);
+    const uint8Array = new Uint8Array(arrayBuffer);
+    for (let i = 0; i < decodedData.length; i++) {
+      uint8Array[i] = decodedData.charCodeAt(i);
+    }
+
+    // Create Blob from array buffer
+    const blob = new Blob([arrayBuffer], { type: "application/pdf" });
+
+    // Create a data URL from the Blob
+    const dataUrl = URL.createObjectURL(blob);
+
+    // Open a new window with the data URL
+    const newWindow = window.open(dataUrl, "_blank");
+
+    // Print the opened window
+    newWindow.onload = function () {
+      newWindow.print();
+    };
+  };
+
+  const handleCheckboxChange = (event) => {
+    const checkboxValue = parseInt(event.target.value, 10);
+
+    // Chỉ cập nhật giá trị của selectedCheckbox nếu checkbox được chọn
+    setSelectedCheckbox(event.target.checked ? checkboxValue : null);
   };
 
   return (
@@ -409,22 +452,27 @@ const Modals = ({
           <div className="   w-[50vw] h-[20vh] ">
             <div>In phiếu mua hàng</div>
             <div className="flex justify-center items-center gap-4">
-              <div>
-                <label>Ngày</label>
-                <input
-                  type="text"
-                  className="border border-gray-300 outline-none  px-2"
-                  value={formPrint.NgayBatDau}
+              <label>Ngày</label>
+              <Space direction="vertical" size={12}>
+                <RangePicker
+                  format="DD/MM/YYYY"
+                  defaultValue={[
+                    dayjs(controlDate.NgayBatDau),
+                    dayjs(controlDate.NgayKetThuc),
+                  ]}
+                  onChange={(values) => {
+                    setFormPrint({
+                      ...formPrint,
+                      NgayBatDau: dayjs(values[0]).format(
+                        "YYYY-MM-DDTHH:mm:ss"
+                      ),
+                      NgayKetThuc: dayjs(values[1]).format(
+                        "YYYY-MM-DDTHH:mm:ss"
+                      ),
+                    });
+                  }}
                 />
-              </div>
-              <div>
-                <label>đến</label>
-                <input
-                  type="text"
-                  className="border border-gray-300 outline-none  px-2"
-                  value={formPrint.NgayKetThuc}
-                />
-              </div>
+              </Space>
             </div>
             <div className="flex justify-center  gap-4 m-4">
               <div className="flex ">
@@ -434,7 +482,7 @@ const Modals = ({
                   value={selectedSctBD}
                   onChange={(e) => setSelectedSctBD(e.target.value)}
                 >
-                  {dataDSPMH?.map((item) => (
+                  {dataPMH?.map((item) => (
                     <option key={item.SoChungTu} value={item.SoChungTu}>
                       {item.SoChungTu}
                     </option>
@@ -448,7 +496,7 @@ const Modals = ({
                   value={selectedSctKT}
                   onChange={(e) => setSelectedSctKT(e.target.value)}
                 >
-                  {dataDSPMH?.map((item) => (
+                  {dataPMH?.map((item) => (
                     <option key={item.SoChungTu} value={item.SoChungTu}>
                       {item.SoChungTu}
                     </option>
@@ -456,18 +504,47 @@ const Modals = ({
                 </select>
               </div>
             </div>
+            {/* liên */}
             <div className="flex justify-center items-center gap-6">
               <div>
-                <input type="checkbox" value="1" checked />
-                <label className="px-2">Liên 1</label>
+                <input
+                  type="checkbox"
+                  id="lien1"
+                  name="lien1"
+                  value="1"
+                  checked={selectedCheckbox === 1}
+                  onChange={handleCheckboxChange}
+                />
+                <label htmlFor="lien1" className="px-2">
+                  Liên 1
+                </label>
               </div>
               <div>
-                <input type="checkbox" value="2" />
-                <label className="px-2">Liên 2</label>
+                <input
+                  type="checkbox"
+                  id="lien2"
+                  name="lien2"
+                  value="2"
+                  checked={selectedCheckbox === 2}
+                  onChange={handleCheckboxChange}
+                />
+                <label htmlFor="lien2" className="px-2">
+                  Liên 2
+                </label>
               </div>
+
               <div>
-                <input type="checkbox" value="3" />
-                <label className="px-2">Liên 3</label>
+                <input
+                  type="checkbox"
+                  id="lien3"
+                  name="lien3"
+                  value="4"
+                  checked={selectedCheckbox === 4}
+                  onChange={handleCheckboxChange}
+                />
+                <label htmlFor="lien3" className="px-2">
+                  Liên 3
+                </label>
               </div>
             </div>
           </div>
@@ -881,7 +958,52 @@ const Modals = ({
                   </div>
                 </div>
               </div>
-              <div className="p-4">bảng</div>
+              {/* table */}
+              <div className="max-w-[98%]  max-h-[50%] mx-auto bg-white  rounded-md my-3 overflow-y-auto ">
+                <table className="min-w-full min-h-full bg-white border border-gray-300 text-text-main">
+                  <thead>
+                    <tr>
+                      {title.map((item) => (
+                        <th key={item} className="py-1 px-2 border">
+                          {item}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dataThongTin?.DataDetails.map((item, index) => (
+                      <tr key={item.MaHang}>
+                        <td className="py-2 px-4 border text-center">
+                          {index + 1}
+                        </td>
+                        <td className="py-2 px-4 border ">{item.MaHang} </td>
+                        <td className="py-2 px-4 border ">{item.TenHang} </td>
+                        <td className="py-2 px-4 border text-center">
+                          {item.DVT}{" "}
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          {item.SoLuong}{" "}
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          {item.DonGia}{" "}
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          {item.TienHang}{" "}
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          {item.Thue}
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          {item.TienThue}
+                        </td>
+                        <td className="py-2 px-4 border text-end">
+                          {item.ThanhTien}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
@@ -1034,7 +1156,7 @@ const Modals = ({
                   </thead>
                   <tbody>
                     {selectedRowData.map((item, index) => (
-                      <Row
+                      <CreateRow
                         key={item.SoChungTu}
                         index={index}
                         item={item}
@@ -1071,7 +1193,7 @@ const Modals = ({
             <div className="flex justify-end gap-4 p-4 ">
               <button
                 className="text-blue-500  border border-blue-500 px-2 py-1 rounded-md hover:bg-blue-500 hover:text-white "
-                onClick={handlePrint}
+                onClick={() => handlePrint(dataBase64)}
               >
                 In phiếu
               </button>

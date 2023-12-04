@@ -16,14 +16,13 @@ const ModalHH = ({ close, data, onRowCreate }) => {
     if (selectedRow && selectedRow.MaHang === dataRow.MaHang) {
       setSelectionCount(selectionCount + 1);
 
-      const newQuantity = selectionCount + 1;
       const defaultValues = {
-        SoLuong: String(newQuantity),
-        DonGia: "0",
-        TienHang: "0",
-        Thue: "0",
-        TienThue: "0",
-        ThanhTien: "0",
+        SoLuong: 1,
+        DonGia: 0,
+        TienHang: 0,
+        Thue: 0,
+        TienThue: 0,
+        ThanhTien: 0,
       };
       const newRow = { ...dataRow, ...defaultValues };
       onRowCreate(newRow);

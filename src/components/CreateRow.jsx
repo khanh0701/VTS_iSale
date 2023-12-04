@@ -1,10 +1,11 @@
+/* eslint-disable react/prop-types */
 import React, { useState } from "react";
 import { NumericFormat } from "react-number-format";
 import icons from "../untils/icons";
 import { toast } from "react-toastify";
 const { MdDelete } = icons;
 
-const Row = ({
+const CreateRow = ({
   index,
   item,
   dataHangHoa,
@@ -12,17 +13,6 @@ const Row = ({
   handleDeleteRow,
   setRowData,
 }) => {
-  //   const [formRow, setFormRow] = useState({
-  //     MaHang: item.MaHang,
-  //     TenHang: item.TenHang,
-  //     DVT: item.DVT,
-  //     SoLuong: item.SoLuong,
-  //     TienHang: item.TienHang,
-  //     Thue: item.Thue,
-  //     TienThue: item.TienThue,
-  //     ThanhTien: item.TienThue,
-  //   });
-  //   console.log("item", item);
   const [x, setX] = useState(item.SoLuong);
 
   const handleChangeData = (e) => {
@@ -45,21 +35,16 @@ const Row = ({
     });
   };
 
-  const handleChangeQuantity = (e) => {
-    // const isValid = /^[0-9]*$/.test(e.target.value);
-    // if (!isValid) return;
-    // console.log(e.target.value);
-    // console.log(e.target.value.replace(/\./g, ""));
-    // console.log(Math.round(e.target.value.replace(/\./g, "")));
-    // const newQuantity = e.target.value;
+  const handleChangeQuantity = () => {
     const newQuantity = Number(Math.round(x)).toFixed(1);
+
     setX(newQuantity);
     setRowData((prev) => {
       const newData = prev.map((i) => {
         if (i.MaHang === item.MaHang) {
           return {
             ...i,
-            SoLuong: newQuantity,
+            SoLuong: Number(newQuantity),
           };
         }
         return i;
@@ -72,13 +57,13 @@ const Row = ({
     const isValid = /^[0-9,]*$/.test(e.target.value);
     if (!isValid) return;
     const newPrice = Number(e.target.value.replace(/,/g, "")).toLocaleString();
-    console.log(newPrice);
+    // console.log(parseInt(newPrice.replace(/,/g, ""), 10));
     setRowData((prev) => {
       const newData = prev.map((i) => {
         if (i.MaHang === item.MaHang) {
           return {
             ...i,
-            DonGia: newPrice,
+            DonGia: parseInt(newPrice.replace(/,/g, ""), 10),
           };
         }
         return i;
@@ -87,6 +72,23 @@ const Row = ({
     });
   };
 
+  const handleChangeTax = (e) => {
+    const newTax = e.target.value;
+
+    setRowData((prev) => {
+      const newData = prev.map((i) => {
+        if (i.MaHang === item.MaHang) {
+          return {
+            ...i,
+            Thue: newTax,
+          };
+        }
+        return i;
+      });
+      return newData;
+    });
+  };
+  console.log("alo", item.DonGia);
   return (
     <tr key={index}>
       <td className="py-2 px-4 border text-center ">{index + 1}</td>
@@ -105,8 +107,9 @@ const Row = ({
       </td>
       <td className="py-2 px-4 border">{item.TenHang}</td>
       <td className="py-2 px-4 border text-center">{item.DVT}</td>
-      <td className="py-2 px-4 border text-end">
+      <td className="py-2  border ">
         <input
+          className="text-end px-4 "
           type="text"
           value={x}
           onChange={(e) => {
@@ -120,37 +123,58 @@ const Row = ({
           onBlur={handleChangeQuantity}
         />
       </td>
-      <td className="py-2 px-4 border text-end">
+      <td className="py-2 border ">
         <input
+          className=" px-4 text-end"
           type="text"
           pattern="[0-9]+"
           title="Please enter a numeric value"
           value={item.DonGia}
           onChange={handleChangePrice}
         />
-        {/* <NumericFormat
-          value={item.DonGia}
+      </td>
+      <td className="py-2 px-4 border text-end">
+        <NumericFormat
+          value={item.DonGia ? Number(item.DonGia) * Number(item.SoLuong) : 0}
           displayType={"text"}
           thousandSeparator={true}
-
-          // suffix={" ₫"}
-        /> */}
+        />
+      </td>
+      <td className="py-2 border">
+        <input
+          className=" text-end"
+          type="number"
+          value={item.Thue}
+          onChange={handleChangeTax}
+        />
       </td>
       <td className="py-2 px-4 border text-end">
         <NumericFormat
           value={
             item.DonGia
-              ? Number(item.DonGia.replace(/,/g, "")) * Number(item.SoLuong)
+              ? Number(item.DonGia) *
+                Number(item.SoLuong) *
+                (Number(item.Thue) / 100)
               : 0
           }
           displayType={"text"}
           thousandSeparator={true}
-          // suffix={" ₫"}
         />
       </td>
-      <td className="py-2 px-4 border text-end">{item.Thue}</td>
-      <td className="py-2 px-4 border text-end">{item.TienThue}</td>
-      <td className="py-2 px-4 border text-end">{item.ThanhTien}</td>
+      <td className="py-2 px-4 border text-end">
+        <NumericFormat
+          value={
+            item.DonGia
+              ? Number(item.DonGia) * Number(item.SoLuong) +
+                Number(item.DonGia) *
+                  Number(item.SoLuong) *
+                  (Number(item.Thue) / 100)
+              : 0
+          }
+          displayType={"text"}
+          thousandSeparator={true}
+        />
+      </td>
       <td className="py-2 flex justify-center ">
         <span
           onClick={() => handleDeleteRow(index)}
@@ -163,4 +187,4 @@ const Row = ({
   );
 };
 
-export default Row;
+export default CreateRow;

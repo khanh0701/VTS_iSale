@@ -23,6 +23,10 @@ const PhieuMuaHang = ({ offLogin }) => {
   const [dataDoiTuong, setDataDoiTuong] = useState(null);
   const [isShowModal, setIsShowModal] = useState(false);
   const [actionType, setActionType] = useState("");
+  const [formKhoanNgay, setFormKhoanNgay] = useState({
+    NgayBatDau: "",
+    NgayKetThuc: "",
+  });
 
   useEffect(() => {
     const getData = async () => {
@@ -69,7 +73,6 @@ const PhieuMuaHang = ({ offLogin }) => {
       fetchData();
     }
   }, [isShowModal, dataRecord]);
-  console.log(dataThongTin);
 
   // Hàm kiểm tra token hết hạn
   const checkTokenExpiration = async () => {
@@ -88,6 +91,11 @@ const PhieuMuaHang = ({ offLogin }) => {
           "Có người đang nhập ở nơi khác. Bạn sẽ bị chuyển đến trang đăng nhập."
         );
         // offLogin;
+      }
+
+      const response2 = await apis.KhoanNgay(tokenLogin);
+      if (response2.data && response2.data.DataError === 0) {
+        setFormKhoanNgay(response2.data);
       }
     } catch (error) {
       console.error("Kiểm tra token thất bại", error);
@@ -593,7 +601,8 @@ const PhieuMuaHang = ({ offLogin }) => {
           dataThongTin={dataThongTin}
           dataKhoHang={dataKhoHang}
           dataDoiTuong={dataDoiTuong}
-          dataDSPMH={data}
+          dataPMH={data}
+          controlDate={formKhoanNgay}
         />
       )}
     </div>

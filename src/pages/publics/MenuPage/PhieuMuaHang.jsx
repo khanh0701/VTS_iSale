@@ -49,7 +49,7 @@ const PhieuMuaHang = ({ offLogin }) => {
             if (responseDT.data && responseDT.data.DataError === 0) {
               setDataDoiTuong(responseDT.data.DataResults);
             }
-          } else if (actionType === "view") {
+          } else if (actionType === "view" || actionType === "edit") {
             const responseTT = await apis.ThongTinPMH(
               tokenLogin,
               dataRecord.SoChungTu
@@ -69,6 +69,7 @@ const PhieuMuaHang = ({ offLogin }) => {
       fetchData();
     }
   }, [isShowModal, dataRecord]);
+  console.log(dataThongTin);
 
   // Hàm kiểm tra token hết hạn
   const checkTokenExpiration = async () => {
@@ -160,6 +161,7 @@ const PhieuMuaHang = ({ offLogin }) => {
     const roundedNumber = Math.round(number * 10) / 10;
     return roundedNumber.toFixed(1);
   };
+
   const columns = [
     {
       title: "STT",
@@ -299,12 +301,6 @@ const PhieuMuaHang = ({ offLogin }) => {
       width: 200,
     },
     {
-      title: "Người sửa cuối",
-      dataIndex: "NguoiSuaCuoi",
-      key: "NguoiSuaCuoi",
-      width: 200,
-    },
-    {
       title: "Ngày sửa cuối",
       dataIndex: "NgaySuaCuoi",
       key: "NgaySuaCuoi",
@@ -312,6 +308,13 @@ const PhieuMuaHang = ({ offLogin }) => {
         text ? moment(text).format("DD/MM/YYYY hh:mm:ss") : null,
       width: 150,
     },
+    {
+      title: "Người sửa cuối",
+      dataIndex: "NguoiSuaCuoi",
+      key: "NguoiSuaCuoi",
+      width: 200,
+    },
+
     {
       title: "Tiền mặt",
       key: "TTTienMat",
@@ -352,13 +355,14 @@ const PhieuMuaHang = ({ offLogin }) => {
                 <FaRegEdit size={16} />
               </div>
               <div
-                onClick={handleDelete}
+                onClick={() => handleDelete(record)}
                 title="Xóa"
                 className="p-[3px] text-red-500 border  border-red-500 rounded-md hover:text-white hover:bg-red-500  "
               >
                 <MdDelete size={16} />
               </div>
               <div
+                onClick={() => handlePrint(record)}
                 title="In phiếu"
                 className="p-[3px] text-blue-500 border  border-blue-500 rounded-md hover:text-white hover:bg-blue-500  "
               >
@@ -382,8 +386,9 @@ const PhieuMuaHang = ({ offLogin }) => {
   const startDate = moment(dates[0], "DD/MM/YYYY").format("YYYY-MM-DD");
   const endDate = moment(dates[1], "DD/MM/YYYY").format("YYYY-MM-DD");
 
-  const handleDelete = () => {
+  const handleDelete = (record) => {
     setActionType("delete");
+    setDataRecord(record);
     setIsShowModal(true);
   };
 
@@ -404,7 +409,11 @@ const PhieuMuaHang = ({ offLogin }) => {
     setDataRecord(record);
     setIsShowModal(true);
   };
-
+  const handlePrint = (record) => {
+    setActionType("print");
+    setDataRecord(record);
+    setIsShowModal(true);
+  };
   return (
     <div className="w-[85vw] ">
       <div className="text-lg font-bold mx-4 my-2 "> Phiếu mua hàng</div>
@@ -466,7 +475,10 @@ const PhieuMuaHang = ({ offLogin }) => {
             </div>
             <div>Thêm phiếu</div>
           </button>
-          <button className="flex items-center  py-1 px-2  rounded-md border-dashed border border-gray-500  text-sm hover:text-sky-500  hover:border-sky-500 ">
+          <button
+            onClick={handlePrint}
+            className="flex items-center  py-1 px-2  rounded-md border-dashed border border-gray-500  text-sm hover:text-sky-500  hover:border-sky-500 "
+          >
             <div className="pr-1">
               <TiPrinter size={20} />
             </div>
@@ -581,6 +593,7 @@ const PhieuMuaHang = ({ offLogin }) => {
           dataThongTin={dataThongTin}
           dataKhoHang={dataKhoHang}
           dataDoiTuong={dataDoiTuong}
+          dataDSPMH={data}
         />
       )}
     </div>

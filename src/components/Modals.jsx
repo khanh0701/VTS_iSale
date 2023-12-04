@@ -2,12 +2,15 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import icons from "../untils/icons";
 import * as apis from "../apis";
-
 import { Table, Form, Input } from "antd";
 import moment from "moment";
+import dayjs from "dayjs";
 import { NumericFormat } from "react-number-format";
-
 import ModalHH from "./ModalHH";
+import { toast } from "react-toastify";
+import { DatePicker, Space } from "antd";
+import Row from "./Row";
+const { RangePicker } = DatePicker;
 
 const { IoMdClose, MdDelete } = icons;
 const Modals = ({
@@ -17,18 +20,22 @@ const Modals = ({
   dataThongTin,
   dataKhoHang,
   dataDoiTuong,
+  dataRecord,
+  dataDSPMH,
 }) => {
   const [isShowModalHH, setIsShowModalHH] = useState(false);
   const [dataHangHoa, setDataHangHoa] = useState(null);
+  // const [MaPMH, setMaPMH] = useState(null);
   const [selectedKhoHang, setSelectedKhoHang] = useState(
     dataKhoHang?.length > 0 ? dataKhoHang[0].MaKho : ""
   );
   const [selectedRowData, setSelectedRowData] = useState([]);
   const [selectedDoiTuong, setSelectedDoiTuong] = useState();
+
   const [doiTuongInfo, setDoiTuongInfo] = useState({ Ten: "", DiaChi: "" });
 
-  const startDate = moment(new Date()).format("YYYY-MM-DD");
-  const endDate = moment(new Date()).format("YYYY-MM-DD");
+  const startDate = dayjs().format("YYYY-MM-DDTHH:mm:ss");
+  const endDate = dayjs().format("YYYY-MM-DDTHH:mm:ss");
 
   const [formPMH, setFormPMH] = useState({
     NgayCTu: startDate,
@@ -39,23 +46,35 @@ const Modals = ({
     TTTienMat: false,
     GhiChu: null,
     DataDetails: [
-      {
-        STT: 1,
-        MaHang: "",
-        TenHang: "",
-        DVT: "",
-        SoLuong: 0,
-        DonGia: 0,
-        TienHang: 0,
-        TyLeThue: 0,
-        TienThue: 0,
-        ThanhTien: 0,
-        TyLeCKTT: 0,
-        TienCKTT: 0,
-        TongCong: 0,
-      },
+      // {
+      //   STT: 1,
+      //   MaHang: "",
+      //   TenHang: "",
+      //   DVT: "",
+      //   SoLuong: 0,
+      //   DonGia: 0,
+      //   TienHang: 0,
+      //   TyLeThue: 0,
+      //   TienThue: 0,
+      //   ThanhTien: 0,
+      //   TyLeCKTT: 0,
+      //   TienCKTT: 0,
+      //   TongCong: 0,
+      // },
     ],
   });
+
+  const [formPMHEdit, setFormPMHEdit] = useState({});
+
+  const [selectedSctBD, setSelectedSctBD] = useState();
+  const [selectedSctKT, setSelectedSctKT] = useState();
+
+  const [formPrint, setFormPrint] = useState({
+    NgayBatDau: startDate,
+    NgayKetThuc: endDate,
+    SoLien: "1",
+  });
+
   const columns = [
     {
       title: "STT",
@@ -214,36 +233,22 @@ const Modals = ({
     }));
   }, [selectedRowData]);
 
-  const handleSubmit = async () => {
-    try {
-      const tokenLogin = localStorage.getItem("tokenlogin");
-      const response = await apis.ThemPMH(
-        tokenLogin,
-        formPMH,
-        selectedDoiTuong,
-        selectedKhoHang
-      );
-      // Kiểm tra call api thành công
-      if (response.data && response.data.DataError === 0) {
-        console.log("hello");
-      }
+  useEffect(() => {
+    if (dataThongTin) setFormPMHEdit(dataThongTin);
+  }, [dataThongTin]);
 
-      setFormPMH({
-        NgayCTu: "",
-        DaoHan: "",
-        MaDoiTuong: "",
-        TenDoiTuong: "",
-        DiaChi: "",
-        MaSoThue: "",
-        MaKho: "",
-        TTTienMat: "",
-        GhiChu: "",
-      });
-      close();
-    } catch (error) {
-      console.error("Error while saving data:", error);
-    }
-  };
+  useEffect(() => {
+    console.table(formPMHEdit);
+  }, [formPMHEdit]);
+
+  useEffect(() => {
+    if (dataDoiTuong) handleDoiTuongFocus(dataDoiTuong[0].Ma);
+  }, [dataDoiTuong]);
+
+  useEffect(() => {
+    if (dataKhoHang) setSelectedKhoHang(dataKhoHang[0].MaKho);
+  }, [dataKhoHang]);
+
   const handleAddInList = async () => {
     try {
       const tokenLogin = localStorage.getItem("tokenlogin");
@@ -270,8 +275,7 @@ const Modals = ({
     setSelectedRowData(updatedRows);
   };
 
-  const handleDoiTuongFocus = (event) => {
-    const selectedValue = event.target.value;
+  const handleDoiTuongFocus = (selectedValue) => {
     setSelectedDoiTuong(selectedValue);
 
     // Tìm thông tin đối tượng tương ứng và cập nhật state
@@ -279,6 +283,112 @@ const Modals = ({
       (item) => item.Ma === selectedValue
     );
     setDoiTuongInfo(selectedDoiTuongInfo || { Ten: "", DiaChi: "" });
+    setFormPMH({
+      ...formPMH,
+      TenDoiTuong: selectedDoiTuongInfo.Ten,
+      DiaChi: selectedDoiTuongInfo.DiaChi,
+    });
+  };
+
+  const handleCreate = async () => {
+    try {
+      const tokenLogin = localStorage.getItem("tokenlogin");
+      const response = await apis.ThemPMH(
+        tokenLogin,
+        formPMH,
+        selectedDoiTuong,
+        selectedKhoHang
+      );
+      // Kiểm tra call api thành công
+      if (response.data && response.data.DataError === 0) {
+        toast.success(response.data.DataErrorDescription);
+        window.location.reload();
+      } else if (response.data && response.data.DataError === -103) {
+        toast.error(response.data.DataErrorDescription);
+      } else if (
+        (response.data && response.data.DataError === -1) ||
+        response.data.DataError === -2 ||
+        response.data.DataError === -3
+      ) {
+        toast.warning(response.data.DataErrorDescription);
+      } else {
+        toast.error(response.data.DataErrorDescription);
+      }
+
+      setFormPMH({
+        NgayCTu: "",
+        DaoHan: "",
+        MaDoiTuong: "",
+        TenDoiTuong: "",
+        DiaChi: "",
+        MaSoThue: "",
+        MaKho: "",
+        TTTienMat: "",
+        GhiChu: "",
+      });
+      close();
+    } catch (error) {
+      console.error("Error while saving data:", error);
+    }
+  };
+
+  const handleDelete = async (dataRecord) => {
+    try {
+      const tokenLogin = localStorage.getItem("tokenlogin");
+      const response = await apis.XoaPMH(tokenLogin, dataRecord.SoChungTu);
+      // Kiểm tra call api thành công
+      if (response.data && response.data.DataError === 0) {
+        toast.success(response.data.DataErrorDescription);
+        window.location.reload();
+      } else if (response.data && response.data.DataError === -104) {
+        toast.error(response.data.DataErrorDescription);
+      } else if (response.data && response.data.DataError === -103) {
+        toast.error(response.data.DataErrorDescription);
+      } else if (
+        (response.data && response.data.DataError === -1) ||
+        response.data.DataError === -2 ||
+        response.data.DataError === -3
+      ) {
+        toast.warning(response.data.DataErrorDescription);
+      } else {
+        toast.error(response.data.DataErrorDescription);
+      }
+      close();
+    } catch (error) {
+      console.error("Error while saving data:", error);
+    }
+  };
+
+  const handlePrint = async () => {
+    try {
+      const tokenLogin = localStorage.getItem("tokenlogin");
+      const response = await apis.InPMH(
+        tokenLogin,
+        formPrint,
+        selectedSctBD,
+        selectedSctKT
+      );
+      // Kiểm tra call api thành công
+      if (response.data && response.data.DataError === 0) {
+        toast.success(response.data.DataErrorDescription);
+        window.location.reload();
+      } else if (response.data && response.data.DataError === -104) {
+        toast.error(response.data.DataErrorDescription);
+      } else if (response.data && response.data.DataError === -103) {
+        toast.error(response.data.DataErrorDescription);
+      } else if (
+        (response.data && response.data.DataError === -1) ||
+        response.data.DataError === -2 ||
+        response.data.DataError === -3
+      ) {
+        toast.warning(response.data.DataErrorDescription);
+      } else {
+        toast.error(response.data.DataErrorDescription);
+      }
+      close();
+    } catch (error) {
+      console.error("Error while saving data:", error);
+    }
   };
 
   return (
@@ -286,14 +396,80 @@ const Modals = ({
       <div className="  m-6 p-4 absolute shadow-lg bg-white rounded-md flex flex-col ">
         {actionType === "delete" && (
           <div className=" flex justify-between items-center ">
-            <label>Bạn có chắc muốn xóa phiếu này không ?</label>
+            <label>
+              Bạn có chắc muốn xóa phiếu
+              <span className="font-bold mx-1"> {dataRecord.SoChungTu}</span>
+              không ?
+            </label>
             <div></div>
-            <button
-              onClick={() => close()}
-              className="text-gray-500 p-1 border hover:border-gray-300 hover:bg-red-600 hover:text-white rounded-full"
-            >
-              <IoMdClose />
-            </button>
+          </div>
+        )}
+
+        {actionType === "print" && (
+          <div className="   w-[50vw] h-[20vh] ">
+            <div>In phiếu mua hàng</div>
+            <div className="flex justify-center items-center gap-4">
+              <div>
+                <label>Ngày</label>
+                <input
+                  type="text"
+                  className="border border-gray-300 outline-none  px-2"
+                  value={formPrint.NgayBatDau}
+                />
+              </div>
+              <div>
+                <label>đến</label>
+                <input
+                  type="text"
+                  className="border border-gray-300 outline-none  px-2"
+                  value={formPrint.NgayKetThuc}
+                />
+              </div>
+            </div>
+            <div className="flex justify-center  gap-4 m-4">
+              <div className="flex ">
+                <label className="px-2">Số chứng từ</label>
+                <select
+                  className=" bg-white border outline-none border-gray-300  "
+                  value={selectedSctBD}
+                  onChange={(e) => setSelectedSctBD(e.target.value)}
+                >
+                  {dataDSPMH?.map((item) => (
+                    <option key={item.SoChungTu} value={item.SoChungTu}>
+                      {item.SoChungTu}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex ">
+                <label className="px-2">Đến</label>
+                <select
+                  className=" bg-white border outline-none border-gray-300  "
+                  value={selectedSctKT}
+                  onChange={(e) => setSelectedSctKT(e.target.value)}
+                >
+                  {dataDSPMH?.map((item) => (
+                    <option key={item.SoChungTu} value={item.SoChungTu}>
+                      {item.SoChungTu}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-center items-center gap-6">
+              <div>
+                <input type="checkbox" value="1" checked />
+                <label className="px-2">Liên 1</label>
+              </div>
+              <div>
+                <input type="checkbox" value="2" />
+                <label className="px-2">Liên 2</label>
+              </div>
+              <div>
+                <input type="checkbox" value="3" />
+                <label className="px-2">Liên 3</label>
+              </div>
+            </div>
           </div>
         )}
 
@@ -589,13 +765,24 @@ const Modals = ({
                     <label form="doituong" className="w-[86px]">
                       Đối tượng
                     </label>
-                    <select
+                    {/* <select
                       readOnly
                       className=" bg-white border w-full outline-none border-gray-300  cursor-not-allowed  bg-gray-200"
                     >
                       <option value="MaDoiTuong_TenDoiTuong">
                         {dataThongTin?.MaDoiTuong} - {dataThongTin?.TenDoiTuong}
                       </option>
+                    </select> */}
+                    <select
+                      className=" bg-white border w-full outline-none border-gray-300  "
+                      value={formPMHEdit?.MaDoiTuong}
+                      // onChange={(e) => handleDoiTuongFocus(e.target.value)}
+                    >
+                      {dataDoiTuong?.map((item) => (
+                        <option key={item.Ma} value={item.Ma}>
+                          {item.Ma} - {item.Ten}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="flex items-center justify-between p-3">
@@ -634,7 +821,13 @@ const Modals = ({
                       <input
                         type="text"
                         className="w-full border border-gray-300 outline-none px-2 "
-                        value={dataThongTin?.GhiChu}
+                        value={formPMHEdit?.GhiChu}
+                        onChange={(e) =>
+                          setFormPMHEdit((prev) => ({
+                            ...prev,
+                            GhiChu: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   </div>
@@ -719,28 +912,24 @@ const Modals = ({
                         className=" border border-gray-300 outline-none  px-2 cursor-not-allowed  bg-gray-200"
                       />
                     </div>
-                    <div className="flex items-center gap-1">
-                      <label className="">Ngày</label>
-                      <input
-                        type="text"
-                        className="border border-gray-300 outline-none px-2 "
-                        value={moment(formPMH.NgayCTu).format("DD/MM/YYYY")}
-                        onChange={(e) =>
-                          setFormPMH({ ...formPMH, NgayCTu: e.target.value })
-                        }
+
+                    <Space direction="vertical" size={12}>
+                      <RangePicker
+                        format="DD/MM/YYYY"
+                        defaultValue={[dayjs(), dayjs()]}
+                        onChange={(values) => {
+                          setFormPMH({
+                            ...formPMH,
+                            NgayCTu: dayjs(values[0]).format(
+                              "YYYY-MM-DDTHH:mm:ss"
+                            ),
+                            DaoHan: dayjs(values[1]).format(
+                              "YYYY-MM-DDTHH:mm:ss"
+                            ),
+                          });
+                        }}
                       />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <label className="">Đáo hạn</label>
-                      <input
-                        type="text"
-                        className="border border-gray-300 outline-none px-2 "
-                        value={moment(formPMH.DaoHan).format("DD/MM/YYYY")}
-                        onChange={(e) =>
-                          setFormPMH({ ...formPMH, DaoHan: e.target.value })
-                        }
-                      />
-                    </div>
+                    </Space>
                   </div>
                   <div className="p-3 flex justify-between items-center">
                     <label form="doituong" className="w-[86px]">
@@ -749,7 +938,7 @@ const Modals = ({
                     <select
                       className=" bg-white border w-full outline-none border-gray-300  "
                       value={selectedDoiTuong}
-                      onChange={handleDoiTuongFocus}
+                      onChange={(e) => handleDoiTuongFocus(e.target.value)}
                     >
                       {dataDoiTuong?.map((item) => (
                         <option key={item.Ma} value={item.Ma}>
@@ -825,7 +1014,7 @@ const Modals = ({
                   chọn từ danh sách
                 </button>
                 <button
-                  onClick={handleSubmit}
+                  onClick={handleCreate}
                   className="border border-blue-500 rounded-md px-4 py-2 hover:bg-blue-500 hover:text-white"
                 >
                   tạo
@@ -845,63 +1034,15 @@ const Modals = ({
                   </thead>
                   <tbody>
                     {selectedRowData.map((item, index) => (
-                      <tr key={index}>
-                        <td className="py-2 px-4 border text-center ">
-                          {index + 1}
-                        </td>
-                        <td className="border">
-                          <select
-                            className=" bg-white  w-full h-full outline-none  "
-                            value={item.MaHang}
-                          >
-                            {dataHangHoa?.map((item) => (
-                              <option key={item.MaHang} value={item.MaHang}>
-                                {item.MaHang} - {item.TenHang}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="py-2 px-4 border">{item.TenHang}</td>
-                        <td className="py-2 px-4 border text-center">
-                          {item.DVT}
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          {roundNumber(item.SoLuong)}
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          <NumericFormat
-                            value={item.DonGia}
-                            displayType={"text"}
-                            thousandSeparator={true}
-                            // suffix={" ₫"}
-                          />
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          <NumericFormat
-                            value={item.TienHang}
-                            displayType={"text"}
-                            thousandSeparator={true}
-                            // suffix={" ₫"}
-                          />
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          {item.Thue}
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          {item.TienThue}
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          {item.ThanhTien}
-                        </td>
-                        <td className="py-2 flex justify-center ">
-                          <span
-                            onClick={() => handleDeleteRow(index)}
-                            className="p-[3px] text-red-500 border  border-red-500 rounded-md hover:text-white hover:bg-red-500  cursor-pointer "
-                          >
-                            <MdDelete size={20} />
-                          </span>
-                        </td>
-                      </tr>
+                      <Row
+                        key={item.SoChungTu}
+                        index={index}
+                        item={item}
+                        dataHangHoa={dataHangHoa}
+                        roundNumber={roundNumber}
+                        handleDeleteRow={handleDeleteRow}
+                        setRowData={setSelectedRowData}
+                      />
                     ))}
                   </tbody>
                 </table>
@@ -910,13 +1051,38 @@ const Modals = ({
           </div>
         )}
 
-        {actionType === "delete" && (
-          <div>
-            <button className="px-2 py-1 rounded-md border text-red-500">
-              Cancel
+        {actionType === "delete" ? (
+          <div className="flex justify-end gap-4 p-4">
+            <button
+              className="border border-blue-500 px-3 py-1 rounded-md hover:bg-blue-500 hover:text-white "
+              onClick={() => handleDelete(dataRecord)}
+            >
+              Ok
             </button>
-            <button className="">Ok</button>
+            <button
+              className="border  px-2 py-1 rounded-md hover:bg-red-500 hover:text-white "
+              onClick={() => close()}
+            >
+              No
+            </button>
           </div>
+        ) : (
+          actionType === "print" && (
+            <div className="flex justify-end gap-4 p-4 ">
+              <button
+                className="text-blue-500  border border-blue-500 px-2 py-1 rounded-md hover:bg-blue-500 hover:text-white "
+                onClick={handlePrint}
+              >
+                In phiếu
+              </button>
+              <button
+                className=" text-red-500 border border-red-500   px-2 py-1 rounded-md hover:bg-red-500 hover:text-white "
+                onClick={() => close()}
+              >
+                Đóng
+              </button>
+            </div>
+          )
         )}
       </div>
 

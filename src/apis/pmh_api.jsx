@@ -104,7 +104,44 @@ export const ThemPMH = (token, formPMH, MaDoiTuong, MaKho) =>
       //   },
       //   data: { ...formPMH, MaDoiTuong: MaDoiTuong, MaKho: MaKho },
       // });
-      // console.log(response);
+
+      // resolve(response);
+    } catch (error) {
+      reject(error);
+    }
+  });
+export const XoaPMH = (token, Sct) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const response = await axios({
+        url: "/entries/DuLieuPMH/Xoa",
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        data: { SoChungTu: Sct },
+      });
+      resolve(response);
+    } catch (error) {
+      reject(error);
+    }
+  });
+export const InPMH = (token, formPrint, SctBD, SctKT) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      console.log("Data to be sent to API:", {
+        ...formPrint,
+        SoChungTuBatDau: SctBD,
+        SoChungTuketThuc: SctKT,
+      });
+      // const response = await axios({
+      //   url: "/entries/DuLieuPMH/InPhieu",
+      //   method: "post",
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      //   data: { ...formPrint },
+      // });
       // resolve(response);
     } catch (error) {
       reject(error);

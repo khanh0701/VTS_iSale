@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Form, DatePicker, Space, Table, Checkbox, Typography } from "antd";
 const { Text } = Typography;
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
@@ -16,8 +16,10 @@ const PhieuMuaHang = ({ offLogin }) => {
   const [form] = Form.useForm();
   const [isValidDate, setIsValidDate] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingPopup, setIsLoadingPopup] = useState(false);
+
   const [data, setData] = useState(null);
-  const [dataThongTin, setDataThongTin] = useState(null);
+  const [dataThongTin, setDataThongTin] = useState([]);
   const [dataRecord, setDataRecord] = useState(null);
 
   const [dataKhoHang, setDataKhoHang] = useState(null);
@@ -59,6 +61,7 @@ const PhieuMuaHang = ({ offLogin }) => {
             );
             if (responseTT.data && responseTT.data.DataError === 0) {
               setDataThongTin(responseTT.data.DataResult);
+              setIsLoadingPopup(true);
             }
             if (actionType === "edit") {
               const responseDT = await apis.ListHelperDoiTuong(tokenLogin);
@@ -175,7 +178,7 @@ const PhieuMuaHang = ({ offLogin }) => {
 
   const columns = [
     {
-      title: "STT",
+      title: "- ",
       dataIndex: "STT",
       key: "STT",
       width: 60,
@@ -333,13 +336,7 @@ const PhieuMuaHang = ({ offLogin }) => {
       fixed: "right",
       width: 80,
       align: "center",
-      render: (text) => (
-        <Checkbox
-          disabled={!text}
-          defaultChecked={text}
-          // onChange={(e) => handleRowSelectionChange(record, e)}
-        />
-      ),
+      render: (text) => <Checkbox disabled={!text} defaultChecked={text} />,
     },
     {
       title: "Chức năng",
@@ -402,6 +399,7 @@ const PhieuMuaHang = ({ offLogin }) => {
 
   const handleView = (record) => {
     setActionType("view");
+
     setDataRecord(record);
     setIsShowModal(true);
   };
@@ -409,6 +407,7 @@ const PhieuMuaHang = ({ offLogin }) => {
   const handleEdit = (record) => {
     setActionType("edit");
     setDataRecord(record);
+    setDataThongTin(record);
     setIsShowModal(true);
   };
 
@@ -602,7 +601,7 @@ const PhieuMuaHang = ({ offLogin }) => {
       {isShowModal && (
         <Modals
           close={() => {
-            setIsShowModal(false);
+            setIsShowModal(false), setIsLoadingPopup(!isLoadingPopup);
           }}
           actionType={actionType}
           roundNumber={roundNumber}
@@ -612,6 +611,7 @@ const PhieuMuaHang = ({ offLogin }) => {
           dataDoiTuong={dataDoiTuong}
           dataPMH={data}
           controlDate={formKhoanNgay}
+          isLoadingModel={isLoadingPopup}
         />
       )}
     </div>

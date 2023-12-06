@@ -5,7 +5,7 @@ import icons from "../untils/icons";
 import { toast } from "react-toastify";
 const { MdDelete } = icons;
 
-const Row = ({
+const CreateRow = ({
   index,
   item,
   dataHangHoa,
@@ -191,4 +191,4 @@ const Row = ({
   );
 };
 
-export default Row;
+export default CreateRow;

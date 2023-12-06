@@ -9,7 +9,7 @@ import { NumericFormat } from "react-number-format";
 import ModalHH from "./ModalHH";
 import { toast } from "react-toastify";
 import { DatePicker, Space } from "antd";
-import { CreateRow } from ".";
+import { CreateRow, EditRow } from ".";
 import { data } from "autoprefixer";
 
 const { RangePicker } = DatePicker;
@@ -25,6 +25,7 @@ const Modals = ({
   dataRecord,
   dataPMH,
   controlDate,
+  isLoadingModel,
 }) => {
   const [isShowModalHH, setIsShowModalHH] = useState(false);
   const [dataHangHoa, setDataHangHoa] = useState(null);
@@ -67,7 +68,10 @@ const Modals = ({
   });
 
   const [formPMHEdit, setFormPMHEdit] = useState();
-  console.log("form", formPMHEdit);
+
+  useEffect(() => {
+    if (dataThongTin !== null) setFormPMHEdit(dataThongTin);
+  }, [dataThongTin]);
 
   const [selectedSctBD, setSelectedSctBD] = useState();
   const [selectedSctKT, setSelectedSctKT] = useState();
@@ -228,20 +232,18 @@ const Modals = ({
   }, [selectedRowData]);
 
   useEffect(() => {
-    if (dataThongTin) setFormPMHEdit(dataThongTin);
-  }, [dataThongTin]);
-
-  useEffect(() => {
     if (dataDoiTuong && actionType === "create")
       handleDoiTuongFocus(dataDoiTuong[0].Ma);
-    if (dataDoiTuong && actionType === "edit")
-      handleDoiTuongFocus(dataDoiTuong[0].Ma);
-  }, [dataDoiTuong]);
+    if (dataDoiTuong && dataThongTin && actionType === "edit")
+      handleDoiTuongFocus(dataThongTin.MaDoiTuong);
+  }, [dataDoiTuong, dataThongTin]);
 
   useEffect(() => {
     if (dataKhoHang && actionType === "create")
       setSelectedKhoHang(dataKhoHang[0].MaKho);
-  }, [dataKhoHang]);
+    if (dataKhoHang && dataThongTin && actionType === "edit")
+      setSelectedKhoHang(dataThongTin.MaKho);
+  }, [dataKhoHang, dataThongTin]);
 
   useEffect(() => {
     if (dataPMH) setSelectedSctBD(dataPMH[0].SoChungTu);
@@ -325,11 +327,12 @@ const Modals = ({
     }
   };
 
-  const handleEdit = async () => {
+  const handleEdit = async (dataRecord) => {
     try {
       const tokenLogin = localStorage.getItem("tokenlogin");
       const response = await apis.SuaPMH(
         tokenLogin,
+        dataRecord.SoChungTu,
         formPMHEdit,
         selectedDoiTuong,
         selectedKhoHang
@@ -808,7 +811,7 @@ const Modals = ({
           </div>
         )}
 
-        {actionType === "edit" && (
+        {actionType === "edit" && isLoadingModel ? (
           <div className=" w-[90vw] h-[600px] ">
             <div className="flex justify-between  items-start pb-1">
               <label className="font-bold ">
@@ -833,13 +836,22 @@ const Modals = ({
                         type="text"
                         className=" border border-gray-300 outline-none  px-2  bg-gray-200"
                         value={dataThongTin?.SoChungTu}
+                        onChange={(e) =>
+                          setFormPMHEdit({
+                            ...formPMHEdit,
+                            SoChungTu: e.target.value,
+                          })
+                        }
                       />
                     </div>
 
                     <Space direction="vertical" size={12}>
                       <RangePicker
                         format="DD/MM/YYYY"
-                        defaultValue={[dayjs(), dayjs()]}
+                        defaultValue={[
+                          dayjs(dataThongTin.NgayCTu, "YYYY-MM-DD"),
+                          dayjs(dataThongTin.DaoHan, "YYYY-MM-DD"),
+                        ]}
                         onChange={(values) => {
                           setFormPMHEdit({
                             ...formPMHEdit,
@@ -889,7 +901,10 @@ const Modals = ({
                       className="w-full border border-gray-300 outline-none px-2 "
                       value={doiTuongInfo.DiaChi}
                       onChange={(e) =>
-                        setFormPrint({ ...formPMHEdit, DiaChi: e.target.value })
+                        setFormPMHEdit({
+                          ...formPMHEdit,
+                          DiaChi: e.target.value,
+                        })
                       }
                     />
                   </div>
@@ -915,12 +930,12 @@ const Modals = ({
                       <input
                         type="text"
                         className="w-full border border-gray-300 outline-none px-2 "
-                        value={formPMHEdit?.GhiChu}
+                        value={dataThongTin?.GhiChu}
                         onChange={(e) =>
-                          setFormPMHEdit((prev) => ({
-                            ...prev,
+                          setFormPMHEdit({
+                            ...formPMHEdit,
                             GhiChu: e.target.value,
-                          }))
+                          })
                         }
                       />
                     </div>
@@ -929,7 +944,7 @@ const Modals = ({
               </div>
               <div>
                 <button
-                  onClick={handleEdit}
+                  onClick={() => handleEdit(dataRecord)}
                   className="border border-blue-500 rounded-md px-4 py-2 hover:bg-blue-500 hover:text-white"
                 >
                   Lưu thay đổi
@@ -949,40 +964,23 @@ const Modals = ({
                   </thead>
                   <tbody>
                     {dataThongTin?.DataDetails.map((item, index) => (
-                      <tr key={item.MaHang}>
-                        <td className="py-2 px-4 border text-center">
-                          {index + 1}
-                        </td>
-                        <td className="py-2 px-4 border ">{item.MaHang} </td>
-                        <td className="py-2 px-4 border ">{item.TenHang} </td>
-                        <td className="py-2 px-4 border text-center">
-                          {item.DVT}
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          {item.SoLuong}
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          {item.DonGia}
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          {item.TienHang}
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          {item.Thue}
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          {item.TienThue}
-                        </td>
-                        <td className="py-2 px-4 border text-end">
-                          {item.ThanhTien}
-                        </td>
-                      </tr>
+                      <EditRow
+                        key={item.SoChungTu}
+                        index={index}
+                        item={item}
+                        roundNumber={roundNumber}
+                        dataHangHoa={dataHangHoa}
+                        handleDeleteRow={handleDeleteRow}
+                        setRowData={dataThongTin}
+                      />
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
+        ) : (
+          <div> loading</div>
         )}
 
         {actionType === "create" && (

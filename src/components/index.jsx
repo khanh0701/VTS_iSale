@@ -8,3 +8,4 @@ export { default as Item } from "./Item";
 export { default as Modals } from "./Modals";
 export { default as ModalHH } from "./ModalHH";
 export { default as CreateRow } from "./CreateRow";
+export { default as EditRow } from "./EditRow";

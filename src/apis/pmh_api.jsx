@@ -111,13 +111,16 @@ export const ThemPMH = (token, formPMH, MaDoiTuong, MaKho) =>
     }
   });
 
-export const SuaPMH = (token, formPMHEdit, MaDoiTuong, MaKho) =>
+export const SuaPMH = (token, Sct, formPMHEdit, MaDoiTuong, MaKho) =>
   new Promise(async (resolve, reject) => {
     try {
       console.log("Data to be sent to API:", {
-        ...formPMHEdit,
-        MaDoiTuong: MaDoiTuong,
-        MaKho: MaKho,
+        SoChungTu: Sct,
+        Data: {
+          ...formPMHEdit,
+          MaDoiTuong: MaDoiTuong,
+          MaKho: MaKho,
+        },
       });
       // const response = await axios({
       //   url: "/entries/DuLieuPMH/Sua",
@@ -125,10 +128,17 @@ export const SuaPMH = (token, formPMHEdit, MaDoiTuong, MaKho) =>
       //   headers: {
       //     Authorization: `Bearer ${token}`,
       //   },
-      //   data: { ...formPMHEdit, MaDoiTuong: MaDoiTuong, MaKho: MaKho },
+      //   data: {
+      //     SoChungTu: Sct,
+      //     Data: {
+      //       ...formPMHEdit,
+      //       MaDoiTuong: MaDoiTuong,
+      //       MaKho: MaKho,
+      //     },
+      //   },
       // });
 
-      resolve(response);
+      // resolve(response);
     } catch (error) {
       reject(error);
     }

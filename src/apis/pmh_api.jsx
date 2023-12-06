@@ -1,6 +1,6 @@
 import axios from "../axios";
 
-export const DanhSachPMH = (token, startDate, endDate) =>
+export const DanhSachPMH = (token, formKhoanNgay) =>
   new Promise(async (resolve, reject) => {
     try {
       const response = await axios({
@@ -10,8 +10,8 @@ export const DanhSachPMH = (token, startDate, endDate) =>
           Authorization: `Bearer ${token}`,
         },
         data: {
-          ngayBatDau: startDate,
-          ngayKetThuc: endDate,
+          ngayBatDau: formKhoanNgay.ngayBatDau,
+          ngayKetThuc: formKhoanNgay.ngayKetThuc,
         },
       });
       resolve(response);
@@ -91,25 +91,49 @@ export const ListHelperHH = (token, MK) =>
 export const ThemPMH = (token, formPMH, MaDoiTuong, MaKho) =>
   new Promise(async (resolve, reject) => {
     try {
-      console.log("Data to be sent to API:", {
-        ...formPMH,
-        MaDoiTuong: MaDoiTuong,
-        MaKho: MaKho,
-      });
-      // const response = await axios({
-      //   url: "/entries/DuLieuPMH/Them",
-      //   method: "post",
-      //   headers: {
-      //     Authorization: `Bearer ${token}`,
-      //   },
-      //   data: { ...formPMH, MaDoiTuong: MaDoiTuong, MaKho: MaKho },
+      // console.log("Data to be sent to API:", {
+      //   ...formPMH,
+      //   MaDoiTuong: MaDoiTuong,
+      //   MaKho: MaKho,
       // });
+      const response = await axios({
+        url: "/entries/DuLieuPMH/Them",
+        method: "post",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        data: { ...formPMH, MaDoiTuong: MaDoiTuong, MaKho: MaKho },
+      });
 
-      // resolve(response);
+      resolve(response);
     } catch (error) {
       reject(error);
     }
   });
+
+export const SuaPMH = (token, formPMHEdit, MaDoiTuong, MaKho) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      console.log("Data to be sent to API:", {
+        ...formPMHEdit,
+        MaDoiTuong: MaDoiTuong,
+        MaKho: MaKho,
+      });
+      // const response = await axios({
+      //   url: "/entries/DuLieuPMH/Sua",
+      //   method: "post",
+      //   headers: {
+      //     Authorization: `Bearer ${token}`,
+      //   },
+      //   data: { ...formPMHEdit, MaDoiTuong: MaDoiTuong, MaKho: MaKho },
+      // });
+
+      resolve(response);
+    } catch (error) {
+      reject(error);
+    }
+  });
+
 export const XoaPMH = (token, Sct) =>
   new Promise(async (resolve, reject) => {
     try {

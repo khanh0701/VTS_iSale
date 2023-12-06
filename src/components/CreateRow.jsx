@@ -5,7 +5,7 @@ import icons from "../untils/icons";
 import { toast } from "react-toastify";
 const { MdDelete } = icons;
 
-const CreateRow = ({
+const Row = ({
   index,
   item,
   dataHangHoa,
@@ -37,7 +37,6 @@ const CreateRow = ({
 
   const handleChangeQuantity = () => {
     const newQuantity = Number(Math.round(x)).toFixed(1);
-
     setX(newQuantity);
     setRowData((prev) => {
       const newData = prev.map((i) => {
@@ -57,13 +56,12 @@ const CreateRow = ({
     const isValid = /^[0-9,]*$/.test(e.target.value);
     if (!isValid) return;
     const newPrice = Number(e.target.value.replace(/,/g, "")).toLocaleString();
-    // console.log(parseInt(newPrice.replace(/,/g, ""), 10));
     setRowData((prev) => {
       const newData = prev.map((i) => {
         if (i.MaHang === item.MaHang) {
           return {
             ...i,
-            DonGia: parseInt(newPrice.replace(/,/g, ""), 10),
+            DonGia: newPrice,
           };
         }
         return i;
@@ -74,13 +72,13 @@ const CreateRow = ({
 
   const handleChangeTax = (e) => {
     const newTax = e.target.value;
-
+    console.log(newTax);
     setRowData((prev) => {
       const newData = prev.map((i) => {
         if (i.MaHang === item.MaHang) {
           return {
             ...i,
-            Thue: newTax,
+            Thue: Number(newTax),
           };
         }
         return i;
@@ -88,7 +86,7 @@ const CreateRow = ({
       return newData;
     });
   };
-  console.log("alo", item.DonGia);
+
   return (
     <tr key={index}>
       <td className="py-2 px-4 border text-center ">{index + 1}</td>
@@ -114,7 +112,7 @@ const CreateRow = ({
           value={x}
           onChange={(e) => {
             const value = e.target.value;
-            if (value.includes(".") && value.split(".")[1].length > 1) return;
+            if (value.includes(".") && value.split(".")[1].length > 2) return;
             setX(e.target.value);
           }}
           onKeyDown={(e) => {
@@ -135,7 +133,11 @@ const CreateRow = ({
       </td>
       <td className="py-2 px-4 border text-end">
         <NumericFormat
-          value={item.DonGia ? Number(item.DonGia) * Number(item.SoLuong) : 0}
+          value={
+            item.DonGia
+              ? Number(item.DonGia.replace(/,/g, "")) * Number(item.SoLuong)
+              : 0
+          }
           displayType={"text"}
           thousandSeparator={true}
         />
@@ -144,6 +146,8 @@ const CreateRow = ({
         <input
           className=" text-end"
           type="number"
+          min={0}
+          max={100}
           value={item.Thue}
           onChange={handleChangeTax}
         />
@@ -152,7 +156,7 @@ const CreateRow = ({
         <NumericFormat
           value={
             item.DonGia
-              ? Number(item.DonGia) *
+              ? Number(item.DonGia.replace(/,/g, "")) *
                 Number(item.SoLuong) *
                 (Number(item.Thue) / 100)
               : 0
@@ -165,8 +169,8 @@ const CreateRow = ({
         <NumericFormat
           value={
             item.DonGia
-              ? Number(item.DonGia) * Number(item.SoLuong) +
-                Number(item.DonGia) *
+              ? Number(item.DonGia.replace(/,/g, "")) * Number(item.SoLuong) +
+                Number(item.DonGia.replace(/,/g, "")) *
                   Number(item.SoLuong) *
                   (Number(item.Thue) / 100)
               : 0
@@ -187,4 +191,4 @@ const CreateRow = ({
   );
 };
 
-export default CreateRow;
+export default Row;

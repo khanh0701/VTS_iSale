@@ -9,29 +9,28 @@ import { toast } from "react-toastify";
 import * as apis from "../../../apis";
 import { NumericFormat } from "react-number-format";
 import { Modals } from "../../../components";
+import dayjs from "dayjs";
 
 const { IoAddCircleOutline, TiPrinter, FaRegEdit, MdDelete, FaRegEye } = icons;
 const PhieuMuaHang = ({ offLogin }) => {
   const [form] = Form.useForm();
   const [isValidDate, setIsValidDate] = useState(true);
-
+  const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState(null);
   const [dataThongTin, setDataThongTin] = useState(null);
   const [dataRecord, setDataRecord] = useState(null);
-  const [dates, setDates] = useState([]);
+
   const [dataKhoHang, setDataKhoHang] = useState(null);
   const [dataDoiTuong, setDataDoiTuong] = useState(null);
   const [isShowModal, setIsShowModal] = useState(false);
   const [actionType, setActionType] = useState("");
-  const [formKhoanNgay, setFormKhoanNgay] = useState({
-    NgayBatDau: "",
-    NgayKetThuc: "",
-  });
+  const [formKhoanNgay, setFormKhoanNgay] = useState({});
 
   useEffect(() => {
     const getData = async () => {
       try {
         await checkTokenExpiration();
+        setIsLoading(true);
       } catch (error) {
         console.error("lấy data thất bại", error);
         toast.error("lấy data thất bại. Vui lòng thử lại sau.");
@@ -61,6 +60,12 @@ const PhieuMuaHang = ({ offLogin }) => {
             if (responseTT.data && responseTT.data.DataError === 0) {
               setDataThongTin(responseTT.data.DataResult);
             }
+            if (actionType === "edit") {
+              const responseDT = await apis.ListHelperDoiTuong(tokenLogin);
+              if (responseDT.data && responseDT.data.DataError === 0) {
+                setDataDoiTuong(responseDT.data.DataResults);
+              }
+            }
           }
         }
       } catch (error) {
@@ -69,17 +74,20 @@ const PhieuMuaHang = ({ offLogin }) => {
       }
     };
 
-    if (isShowModal && dataRecord) {
+    if (dataRecord && isShowModal) {
       fetchData();
     }
-  }, [isShowModal, dataRecord]);
+  }, [dataRecord, isShowModal]);
 
   // Hàm kiểm tra token hết hạn
   const checkTokenExpiration = async () => {
     try {
       const tokenLogin = localStorage.getItem("tokenlogin");
-      const response = await apis.DanhSachPMH(tokenLogin, startDate, endDate);
-
+      const response2 = await apis.KhoanNgay(tokenLogin);
+      if (response2.data && response2.data.DataError === 0) {
+        setFormKhoanNgay(response2.data);
+      }
+      const response = await apis.DanhSachPMH(tokenLogin, formKhoanNgay);
       // Kiểm tra call api thành công
       if (response.data && response.data.DataError === 0) {
         setData(response.data.DataResults);
@@ -91,11 +99,6 @@ const PhieuMuaHang = ({ offLogin }) => {
           "Có người đang nhập ở nơi khác. Bạn sẽ bị chuyển đến trang đăng nhập."
         );
         // offLogin;
-      }
-
-      const response2 = await apis.KhoanNgay(tokenLogin);
-      if (response2.data && response2.data.DataError === 0) {
-        setFormKhoanNgay(response2.data);
       }
     } catch (error) {
       console.error("Kiểm tra token thất bại", error);
@@ -391,9 +394,6 @@ const PhieuMuaHang = ({ offLogin }) => {
     },
   ];
 
-  const startDate = moment(dates[0], "DD/MM/YYYY").format("YYYY-MM-DD");
-  const endDate = moment(dates[1], "DD/MM/YYYY").format("YYYY-MM-DD");
-
   const handleDelete = (record) => {
     setActionType("delete");
     setDataRecord(record);
@@ -422,6 +422,10 @@ const PhieuMuaHang = ({ offLogin }) => {
     setDataRecord(record);
     setIsShowModal(true);
   };
+
+  if (!isLoading) {
+    return <p>loading</p>;
+  }
   return (
     <div className="w-[85vw] ">
       <div className="text-lg font-bold mx-4 my-2 "> Phiếu mua hàng</div>
@@ -442,21 +446,24 @@ const PhieuMuaHang = ({ offLogin }) => {
                 <Space>
                   <RangePicker
                     format="DD/MM/YYYY"
-                    picker="date"
+                    // picker="date"
                     onKeyDown={handleKeyDown}
                     onCalendarChange={handleCalendarChange}
+                    defaultValue={[
+                      dayjs(formKhoanNgay.NgayBatDau, "YYYY-MM-DD"),
+                      dayjs(formKhoanNgay.NgayKetThuc, "YYYY-MM-DD"),
+                    ]}
                     onChange={(values) => {
-                      console.log("Selected Date Range (onChange):", values);
-                      setDates(
-                        values.map((item) => {
-                          return moment(item);
-                        })
-                      );
+                      setFormKhoanNgay({
+                        ...formKhoanNgay,
+                        NgayBatDau: dayjs(values[0]).format(
+                          "YYYY-MM-DDTHH:mm:ss"
+                        ),
+                        NgayKetThuc: dayjs(values[1]).format(
+                          "YYYY-MM-DDTHH:mm:ss"
+                        ),
+                      });
                     }}
-                    // defaultValue={[
-                    //   moment("11/11/2022", "DD/MM/YYYY"),
-                    //   moment("31/12/2024", "DD/MM/YYYY"),
-                    // ]}
                   />
                   {isValidDate ? (
                     <CheckCircleOutlined style={{ color: "green" }} />
@@ -594,7 +601,9 @@ const PhieuMuaHang = ({ offLogin }) => {
 
       {isShowModal && (
         <Modals
-          close={() => setIsShowModal(false)}
+          close={() => {
+            setIsShowModal(false);
+          }}
           actionType={actionType}
           roundNumber={roundNumber}
           dataRecord={dataRecord}

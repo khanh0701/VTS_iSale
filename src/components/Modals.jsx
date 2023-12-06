@@ -10,6 +10,7 @@ import ModalHH from "./ModalHH";
 import { toast } from "react-toastify";
 import { DatePicker, Space } from "antd";
 import { CreateRow } from ".";
+import { data } from "autoprefixer";
 
 const { RangePicker } = DatePicker;
 
@@ -27,9 +28,7 @@ const Modals = ({
 }) => {
   const [isShowModalHH, setIsShowModalHH] = useState(false);
   const [dataHangHoa, setDataHangHoa] = useState(null);
-  const [selectedKhoHang, setSelectedKhoHang] = useState(
-    dataKhoHang?.length > 0 ? dataKhoHang[0].MaKho : ""
-  );
+  const [selectedKhoHang, setSelectedKhoHang] = useState();
   const [selectedRowData, setSelectedRowData] = useState([]);
   const [selectedDoiTuong, setSelectedDoiTuong] = useState();
   const [selectedCheckbox, setSelectedCheckbox] = useState(1);
@@ -38,10 +37,11 @@ const Modals = ({
 
   const startDate = dayjs(controlDate.NgayBatDau).format("YYYY-MM-DDTHH:mm:ss");
   const endDate = dayjs(controlDate.NgayKetThuc).format("YYYY-MM-DDTHH:mm:ss");
-
+  const NgayCTu = dayjs().format("YYYY-MM-DDTHH:mm:ss");
+  const DaoHan = dayjs().format("YYYY-MM-DDTHH:mm:ss");
   const [formPMH, setFormPMH] = useState({
-    NgayCTu: startDate,
-    DaoHan: endDate,
+    NgayCTu: NgayCTu,
+    DaoHan: DaoHan,
     TenDoiTuong: "",
     DiaChi: "",
     MaSoThue: "",
@@ -66,7 +66,8 @@ const Modals = ({
     ],
   });
 
-  const [formPMHEdit, setFormPMHEdit] = useState({});
+  const [formPMHEdit, setFormPMHEdit] = useState();
+  console.log("form", formPMHEdit);
 
   const [selectedSctBD, setSelectedSctBD] = useState();
   const [selectedSctKT, setSelectedSctKT] = useState();
@@ -173,26 +174,6 @@ const Modals = ({
         />
       ),
     },
-    {
-      title: "",
-      dataIndex: "ChucNang",
-      key: "ChucNang",
-      width: 40,
-      align: "end",
-      fixed: "right",
-      render: () => {
-        return (
-          <div className=" flex gap-1 items-center justify-center ">
-            <div
-              title="Xóa"
-              className="p-[3px] text-red-500 border  border-red-500 rounded-md hover:text-white hover:bg-red-500  "
-            >
-              <MdDelete size={16} />
-            </div>
-          </div>
-        );
-      },
-    },
   ];
 
   const title = [
@@ -212,25 +193,37 @@ const Modals = ({
   useEffect(() => {
     setFormPMH((prevFormPMH) => ({
       ...prevFormPMH,
-      DataDetails: selectedRowData.map((item, index) => ({
-        STT: index + 1,
-        MaHang: item.MaHang,
-        TenHang: item.TenHang,
-        DVT: item.DVT,
-        //
-        SoLuong: item.SoLuong,
-        DonGia: item.DonGia,
-        TienHang: item.SoLuong * item.DonGia,
-        TyLeThue: item.Thue,
-        TienThue: item.TienThue,
-        ThanhTien: item.ThanhTien,
-        // TyLeCKTT: item.TyLeCKTT,
-        // TienCKTT: item.TienCKTT,
-        // TongCong: item.TongCong,
-        TyLeCKTT: 0,
-        TienCKTT: 0,
-        TongCong: 0,
-      })),
+      DataDetails: selectedRowData.map((item, index) => {
+        // Đảm bảo rằng item.DonGia là một chuỗi hợp lệ
+        const donGiaString =
+          item.DonGia && typeof item.DonGia === "string" ? item.DonGia : "0";
+        // const TyLeThueString =
+        //   item.DonGia && typeof item.Thue === "string" ? item.Thue : "0";
+        // Loại bỏ dấu phẩy và chuyển đổi thành số
+        const donGiaNumber = parseFloat(donGiaString.replace(/,/g, "")) || 0;
+        // const ThueNumber = parseFloat(TyLeThueString.replace(/,/g, "")) || 0;
+
+        const tienHang = Number(item.SoLuong) * Number(donGiaNumber);
+        const tienThue = Number(tienHang) * (Number(item.Thue) / 100);
+        const thanhTien = Number(tienHang) + Number(tienThue);
+        const tongCong = Number(thanhTien);
+
+        return {
+          STT: index + 1,
+          MaHang: item.MaHang,
+          TenHang: item.TenHang,
+          DVT: item.DVT,
+          SoLuong: item.SoLuong,
+          DonGia: donGiaNumber,
+          TienHang: tienHang,
+          TyLeThue: Number(item.Thue),
+          TienThue: tienThue,
+          ThanhTien: thanhTien,
+          TyLeCKTT: 0,
+          TienCKTT: 0,
+          TongCong: tongCong,
+        };
+      }),
     }));
   }, [selectedRowData]);
 
@@ -239,16 +232,17 @@ const Modals = ({
   }, [dataThongTin]);
 
   useEffect(() => {
-    console.table(formPMHEdit);
-  }, [formPMHEdit]);
-
-  useEffect(() => {
-    if (dataDoiTuong) handleDoiTuongFocus(dataDoiTuong[0].Ma);
+    if (dataDoiTuong && actionType === "create")
+      handleDoiTuongFocus(dataDoiTuong[0].Ma);
+    if (dataDoiTuong && actionType === "edit")
+      handleDoiTuongFocus(dataDoiTuong[0].Ma);
   }, [dataDoiTuong]);
 
   useEffect(() => {
-    if (dataKhoHang) setSelectedKhoHang(dataKhoHang[0].MaKho);
+    if (dataKhoHang && actionType === "create")
+      setSelectedKhoHang(dataKhoHang[0].MaKho);
   }, [dataKhoHang]);
+
   useEffect(() => {
     if (dataPMH) setSelectedSctBD(dataPMH[0].SoChungTu);
     if (dataPMH) setSelectedSctKT(dataPMH[0].SoChungTu);
@@ -293,6 +287,11 @@ const Modals = ({
       TenDoiTuong: selectedDoiTuongInfo.Ten,
       DiaChi: selectedDoiTuongInfo.DiaChi,
     });
+    setFormPMHEdit({
+      ...formPMHEdit,
+      TenDoiTuong: selectedDoiTuongInfo.Ten,
+      DiaChi: selectedDoiTuongInfo.DiaChi,
+    });
   };
 
   const handleCreate = async () => {
@@ -320,17 +319,37 @@ const Modals = ({
         toast.error(response.data.DataErrorDescription);
       }
 
-      setFormPMH({
-        NgayCTu: "",
-        DaoHan: "",
-        MaDoiTuong: "",
-        TenDoiTuong: "",
-        DiaChi: "",
-        MaSoThue: "",
-        MaKho: "",
-        TTTienMat: "",
-        GhiChu: "",
-      });
+      close();
+    } catch (error) {
+      console.error("Error while saving data:", error);
+    }
+  };
+
+  const handleEdit = async () => {
+    try {
+      const tokenLogin = localStorage.getItem("tokenlogin");
+      const response = await apis.SuaPMH(
+        tokenLogin,
+        formPMHEdit,
+        selectedDoiTuong,
+        selectedKhoHang
+      );
+      // Kiểm tra call api thành công
+      if (response.data && response.data.DataError === 0) {
+        toast.success(response.data.DataErrorDescription);
+        window.location.reload();
+      } else if (response.data && response.data.DataError === -103) {
+        toast.error(response.data.DataErrorDescription);
+      } else if (
+        (response.data && response.data.DataError === -1) ||
+        response.data.DataError === -2 ||
+        response.data.DataError === -3
+      ) {
+        toast.warning(response.data.DataErrorDescription);
+      } else {
+        toast.error(response.data.DataErrorDescription);
+      }
+
       close();
     } catch (error) {
       console.error("Error while saving data:", error);
@@ -812,48 +831,38 @@ const Modals = ({
                       <input
                         readOnly
                         type="text"
-                        className=" border border-gray-300 outline-none  px-2 cursor-not-allowed  bg-gray-200"
+                        className=" border border-gray-300 outline-none  px-2  bg-gray-200"
                         value={dataThongTin?.SoChungTu}
                       />
                     </div>
-                    <div className="flex items-center gap-1">
-                      <label className="">Ngày</label>
-                      <input
-                        readOnly
-                        type="text"
-                        className="border border-gray-300 outline-none px-2 cursor-not-allowed  bg-gray-200"
-                        value={moment(dataThongTin?.NgayCTu).format(
-                          "DD/MM/YYYY"
-                        )}
+
+                    <Space direction="vertical" size={12}>
+                      <RangePicker
+                        format="DD/MM/YYYY"
+                        defaultValue={[dayjs(), dayjs()]}
+                        onChange={(values) => {
+                          setFormPMHEdit({
+                            ...formPMHEdit,
+                            NgayCTu: dayjs(values[0]).format(
+                              "YYYY-MM-DDTHH:mm:ss"
+                            ),
+                            DaoHan: dayjs(values[1]).format(
+                              "YYYY-MM-DDTHH:mm:ss"
+                            ),
+                          });
+                        }}
                       />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <label className="">Đáo hạn</label>
-                      <input
-                        type="text"
-                        className="border border-gray-300 outline-none px-2 "
-                        value={moment(dataThongTin?.DaoHan).format(
-                          "DD/MM/YYYY"
-                        )}
-                      />
-                    </div>
+                    </Space>
                   </div>
                   <div className="p-3 flex justify-between items-center">
                     <label form="doituong" className="w-[86px]">
                       Đối tượng
                     </label>
-                    {/* <select
-                      readOnly
-                      className=" bg-white border w-full outline-none border-gray-300  cursor-not-allowed  bg-gray-200"
-                    >
-                      <option value="MaDoiTuong_TenDoiTuong">
-                        {dataThongTin?.MaDoiTuong} - {dataThongTin?.TenDoiTuong}
-                      </option>
-                    </select> */}
+
                     <select
                       className=" bg-white border w-full outline-none border-gray-300  "
-                      value={formPMHEdit?.MaDoiTuong}
-                      // onChange={(e) => handleDoiTuongFocus(e.target.value)}
+                      value={selectedDoiTuong}
+                      onChange={(e) => handleDoiTuongFocus(e.target.value)}
                     >
                       {dataDoiTuong?.map((item) => (
                         <option key={item.Ma} value={item.Ma}>
@@ -865,19 +874,23 @@ const Modals = ({
                   <div className="flex items-center justify-between p-3">
                     <label className="w-[86px]">Tên</label>
                     <input
-                      readOnly
                       type="text"
-                      className="w-full border border-gray-300 outline-none px-2 cursor-not-allowed  bg-gray-200"
-                      value={dataThongTin?.TenDoiTuong}
+                      className="w-full border border-gray-300 outline-none px-2 "
+                      value={doiTuongInfo.Ten}
+                      onChange={(e) =>
+                        setFormPMHEdit({ ...formPMHEdit, Ten: e.target.value })
+                      }
                     />
                   </div>
                   <div className="flex items-center justify-between p-3">
                     <label className="w-[86px]">Địa chỉ</label>
                     <input
-                      readOnly
                       type="text"
-                      className="w-full border border-gray-300 outline-none px-2 cursor-not-allowed  bg-gray-200 "
-                      value={dataThongTin?.DiaChi}
+                      className="w-full border border-gray-300 outline-none px-2 "
+                      value={doiTuongInfo.DiaChi}
+                      onChange={(e) =>
+                        setFormPrint({ ...formPMHEdit, DiaChi: e.target.value })
+                      }
                     />
                   </div>
                   <div className="flex items-center  w-full">
@@ -885,10 +898,14 @@ const Modals = ({
                       <label form="khohang" className="w-[94px]">
                         Kho hàng
                       </label>
-                      <select className=" bg-white border w-full  border-gray-300 hover:border-gray-500 ">
+                      <select
+                        className=" bg-white border w-full  border-gray-300 hover:border-gray-500 "
+                        onChange={(e) => setSelectedKhoHang(e.target.value)}
+                        value={selectedKhoHang}
+                      >
                         {dataKhoHang?.map((item) => (
-                          <option key={item.MaKho} value={item.ThongTinKho}>
-                            {item.ThongTinKho}
+                          <option key={item.MaKho} value={item.MaKho}>
+                            {item.MaKho} - {item.TenKho}
                           </option>
                         ))}
                       </select>
@@ -909,54 +926,14 @@ const Modals = ({
                     </div>
                   </div>
                 </div>
-                {/* thong tin cap nhat */}
-                <div className="w-[40%] py-1">
-                  <div className="text-center p-2 font-medium">
-                    Thông tin cập nhật
-                  </div>
-                  <div className="border-2 rounded-md w-[98%] h-[80%] ">
-                    <div className="flex justify-between items-center ">
-                      <div className="flex items-center p-3  ">
-                        <label className="">Người tạo</label>
-                        <input
-                          type="text"
-                          className=" border border-gray-300 outline-none px-2"
-                          value={dataThongTin?.NguoiTao}
-                        />
-                      </div>
-                      <div className="flex items-center p-3 w-1/2">
-                        <label className="">Lúc</label>
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 outline-none px-2 "
-                          value={moment(dataThongTin?.NgayTao).format(
-                            "DD/MM/YYYY hh:mm:ss"
-                          )}
-                        />
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center ">
-                      <div className="flex items-center p-3  ">
-                        <label className="">Sửa cuối</label>
-                        <input
-                          type="text"
-                          className=" border border-gray-300 outline-none px-2 "
-                          value={dataThongTin?.NguoiSuaCuoi}
-                        />
-                      </div>
-                      <div className="flex items-center p-3 w-1/2">
-                        <label className="">Lúc</label>
-                        <input
-                          type="text"
-                          className="w-full border border-gray-300 outline-none px-2 "
-                          value={moment(dataThongTin?.NgaySuaCuoi).format(
-                            "DD/MM/YYYY hh:mm:ss"
-                          )}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
+              </div>
+              <div>
+                <button
+                  onClick={handleEdit}
+                  className="border border-blue-500 rounded-md px-4 py-2 hover:bg-blue-500 hover:text-white"
+                >
+                  Lưu thay đổi
+                </button>
               </div>
               {/* table */}
               <div className="max-w-[98%]  max-h-[50%] mx-auto bg-white  rounded-md my-3 overflow-y-auto ">
@@ -979,16 +956,16 @@ const Modals = ({
                         <td className="py-2 px-4 border ">{item.MaHang} </td>
                         <td className="py-2 px-4 border ">{item.TenHang} </td>
                         <td className="py-2 px-4 border text-center">
-                          {item.DVT}{" "}
+                          {item.DVT}
                         </td>
                         <td className="py-2 px-4 border text-end">
-                          {item.SoLuong}{" "}
+                          {item.SoLuong}
                         </td>
                         <td className="py-2 px-4 border text-end">
-                          {item.DonGia}{" "}
+                          {item.DonGia}
                         </td>
                         <td className="py-2 px-4 border text-end">
-                          {item.TienHang}{" "}
+                          {item.TienHang}
                         </td>
                         <td className="py-2 px-4 border text-end">
                           {item.Thue}

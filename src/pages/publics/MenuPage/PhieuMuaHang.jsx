@@ -25,21 +25,24 @@ const PhieuMuaHang = ({ offLogin }) => {
   const [dataKhoHang, setDataKhoHang] = useState(null);
   const [dataDoiTuong, setDataDoiTuong] = useState(null);
   const [isShowModal, setIsShowModal] = useState(false);
-  const [actionType, setActionType] = useState("");
-  const [formKhoanNgay, setFormKhoanNgay] = useState({});
+  const [tableLoad, setTableLoad] = useState(false);
 
-  useEffect(() => {
-    const getData = async () => {
-      try {
-        await checkTokenExpiration();
-        setIsLoading(true);
-      } catch (error) {
-        console.error("lấy data thất bại", error);
-        toast.error("lấy data thất bại. Vui lòng thử lại sau.");
-      }
-    };
-    getData();
-  }, []);
+  const [actionType, setActionType] = useState("");
+  const [formKhoanNgay, setFormKhoanNgay] = useState([]);
+
+  // useEffect(() => {
+  //   const getData = async () => {
+  //     try {
+  //       await getKhoanNgay();
+  //       await checkTokenExpiration();
+  //       setIsLoading(true);
+  //     } catch (error) {
+  //       console.error("lấy data thất bại", error);
+  //       toast.error("lấy data thất bại. Vui lòng thử lại sau.");
+  //     }
+  //   };
+  //   getData();
+  // }, [isLoading]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,21 +85,55 @@ const PhieuMuaHang = ({ offLogin }) => {
     }
   }, [dataRecord, isShowModal]);
 
-  // Hàm kiểm tra token hết hạn
-  const checkTokenExpiration = async () => {
+  useEffect(() => {
+    console.log("KoanNgay", formKhoanNgay);
+    getKhoanNgay();
+    checkTokenExpiration();
+  }, []);
+
+  const getKhoanNgay = async () => {
     try {
       const tokenLogin = localStorage.getItem("tokenlogin");
-      const response2 = await apis.KhoanNgay(tokenLogin);
-      if (response2.data && response2.data.DataError === 0) {
-        setFormKhoanNgay(response2.data);
-      }
-      const response = await apis.DanhSachPMH(tokenLogin, formKhoanNgay);
-      // Kiểm tra call api thành công
+      const response = await apis.KhoanNgay(tokenLogin);
+
       if (response.data && response.data.DataError === 0) {
-        setData(response.data.DataResults);
+        setFormKhoanNgay(response.data);
+        setIsLoading(true);
       } else if (response.data && response.data.DataError === -107) {
         // Thực hiện lấy lại token
         await refreshToken();
+      } else {
+        toast.error(
+          "Có người đang nhập ở nơi khác. Bạn sẽ bị chuyển đến trang đăng nhập."
+        );
+        // offLogin;
+      }
+    } catch (error) {
+      console.error("Kiểm tra token thất bại", error);
+    }
+  };
+
+  // Hàm kiểm tra token hết hạn
+
+  const checkTokenExpiration = async () => {
+    try {
+      const tokenLogin = localStorage.getItem("tokenlogin");
+      console.log("SENDdATE", formKhoanNgay);
+      const response = await apis.DanhSachPMH(tokenLogin, formKhoanNgay);
+      // eslint-disable-next-line no-debugger
+
+      // Kiểm tra call api thành công
+      if (response.data && response.data.DataError === 0) {
+        console.log("data", response.data.DataResults);
+        setData(response.data.DataResults);
+        setTableLoad(true);
+      } else if (response.data && response.data.DataError === -107) {
+        // Thực hiện lấy lại token
+        await refreshToken();
+      } else if (response.data && response.data.DataError === -104) {
+        toast.error(response.data.DataErrorDescription);
+        setData(response.data.DataResults);
+        setTableLoad(true);
       } else {
         toast.error(
           "Có người đang nhập ở nơi khác. Bạn sẽ bị chuyển đến trang đăng nhập."
@@ -422,9 +459,16 @@ const PhieuMuaHang = ({ offLogin }) => {
     setIsShowModal(true);
   };
 
+  const handleFilterDS = () => {
+    console.log("DATA");
+    checkTokenExpiration();
+    setTableLoad(false);
+  };
+
   if (!isLoading) {
     return <p>loading</p>;
   }
+
   return (
     <div className="w-[85vw] ">
       <div className="text-lg font-bold mx-4 my-2 "> Phiếu mua hàng</div>
@@ -474,7 +518,10 @@ const PhieuMuaHang = ({ offLogin }) => {
             </Form>
           </div>
           <div className=" px-4 py-1">
-            <button className="flex items-center   py-1 px-2 bg-bg-main rounded-md  text-white text-sm hover:opacity-80">
+            <button
+              onClick={handleFilterDS}
+              className="flex items-center   py-1 px-2 bg-bg-main rounded-md  text-white text-sm hover:opacity-80"
+            >
               Tìm kiếm
             </button>
           </div>
@@ -501,101 +548,105 @@ const PhieuMuaHang = ({ offLogin }) => {
         </div>
       </div>
       <div className="relative px-2 py-1 ">
-        <Table
-          className="table_pmh"
-          columns={columns}
-          dataSource={data}
-          size="small"
-          scroll={{
-            x: 1500,
-            y: 410,
-          }}
-          bordered
-          pagination={false}
-          rowKey={(record) => record.SoChungTu}
-          // onRow={(record) => ({
-          //   onClick: () => handleView(record),
-          // })}
-          // Bảng Tổng
-          summary={(pageData) => {
-            let totalTongThanhTien = 0;
-            let totalTongTienThue = 0;
-            let totalTongTienHang = 0;
-            let totalTongSoLuong = 0;
-            let totalTongMatHang = 0;
+        {tableLoad ? (
+          <Table
+            className="table_pmh"
+            columns={columns}
+            dataSource={data}
+            size="small"
+            scroll={{
+              x: 1500,
+              y: 410,
+            }}
+            bordered
+            pagination={false}
+            rowKey={(record) => record.SoChungTu}
+            // onRow={(record) => ({
+            //   onClick: () => handleView(record),
+            // })}
+            // Bảng Tổng
+            summary={(pageData) => {
+              let totalTongThanhTien = 0;
+              let totalTongTienThue = 0;
+              let totalTongTienHang = 0;
+              let totalTongSoLuong = 0;
+              let totalTongMatHang = 0;
 
-            pageData.forEach(
-              ({
-                TongThanhTien,
-                TongTienThue,
-                TongTienHang,
-                TongSoLuong,
-                TongMatHang,
-              }) => {
-                totalTongThanhTien += TongThanhTien;
-                totalTongTienThue += TongTienThue;
-                totalTongTienHang += TongTienHang;
-                totalTongSoLuong += TongSoLuong;
-                totalTongMatHang += TongMatHang;
-              }
-            );
-            return (
-              <Table.Summary fixed="bottom">
-                <Table.Summary.Row className="text-end font-bold">
-                  <Table.Summary.Cell index={0} className="text-center ">
-                    {pageData.length}
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={1}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={2}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={3}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={4}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={5}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={6}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={7}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={8}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={9}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={10}>
-                    {totalTongMatHang}
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={11}>
-                    {roundNumber(totalTongSoLuong)}
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={12}>
-                    <NumericFormat
-                      value={totalTongTienHang}
-                      displayType={"text"}
-                      thousandSeparator={true}
-                      // suffix={" ₫"}
-                    />
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={13}>
-                    {totalTongTienThue}
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={14}>
-                    <NumericFormat
-                      value={totalTongThanhTien}
-                      displayType={"text"}
-                      thousandSeparator={true}
-                    />
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={15}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={16}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={17}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={18}></Table.Summary.Cell>
-                  <Table.Summary.Cell index={19} className="text-center ">
-                    {data
-                      ? data.reduce(
-                          (count, item) => count + (item.TTTienMat ? 1 : 0),
-                          0
-                        )
-                      : null}
-                  </Table.Summary.Cell>
-                  <Table.Summary.Cell index={20}></Table.Summary.Cell>
-                </Table.Summary.Row>
-              </Table.Summary>
-            );
-          }}
-        ></Table>
+              pageData.forEach(
+                ({
+                  TongThanhTien,
+                  TongTienThue,
+                  TongTienHang,
+                  TongSoLuong,
+                  TongMatHang,
+                }) => {
+                  totalTongThanhTien += TongThanhTien;
+                  totalTongTienThue += TongTienThue;
+                  totalTongTienHang += TongTienHang;
+                  totalTongSoLuong += TongSoLuong;
+                  totalTongMatHang += TongMatHang;
+                }
+              );
+              return (
+                <Table.Summary fixed="bottom">
+                  <Table.Summary.Row className="text-end font-bold">
+                    <Table.Summary.Cell index={0} className="text-center ">
+                      {pageData.length}
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={1}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={2}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={3}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={4}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={5}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={6}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={7}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={8}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={9}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={10}>
+                      {totalTongMatHang}
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={11}>
+                      {roundNumber(totalTongSoLuong)}
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={12}>
+                      <NumericFormat
+                        value={totalTongTienHang}
+                        displayType={"text"}
+                        thousandSeparator={true}
+                        // suffix={" ₫"}
+                      />
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={13}>
+                      {totalTongTienThue}
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={14}>
+                      <NumericFormat
+                        value={totalTongThanhTien}
+                        displayType={"text"}
+                        thousandSeparator={true}
+                      />
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={15}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={16}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={17}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={18}></Table.Summary.Cell>
+                    <Table.Summary.Cell index={19} className="text-center ">
+                      {data
+                        ? data.reduce(
+                            (count, item) => count + (item.TTTienMat ? 1 : 0),
+                            0
+                          )
+                        : null}
+                    </Table.Summary.Cell>
+                    <Table.Summary.Cell index={20}></Table.Summary.Cell>
+                  </Table.Summary.Row>
+                </Table.Summary>
+              );
+            }}
+          ></Table>
+        ) : (
+          <p>Loading....</p>
+        )}
       </div>
 
       {isShowModal && (

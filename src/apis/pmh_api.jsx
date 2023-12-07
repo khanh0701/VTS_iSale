@@ -3,18 +3,17 @@ import axios from "../axios";
 export const DanhSachPMH = (token, formKhoanNgay) =>
   new Promise(async (resolve, reject) => {
     try {
+      console.log(formKhoanNgay);
       const response = await axios({
         url: "/entries/DuLieuPMH/DanhSach",
         method: "post",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        data: {
-          ngayBatDau: formKhoanNgay.ngayBatDau,
-          ngayKetThuc: formKhoanNgay.ngayKetThuc,
-        },
+        data: formKhoanNgay,
       });
       resolve(response);
+      console.log("dataAPI", response);
     } catch (error) {
       reject(error);
     }
